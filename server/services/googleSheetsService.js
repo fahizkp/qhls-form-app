@@ -1,0 +1,192 @@
+const { google } = require('googleapis');
+
+// Load zones/units from JSON file
+const zonesUnitsData = require('../data/zonesUnits.json');
+
+// Initialize Google Sheets API
+const auth = new google.auth.GoogleAuth({
+  credentials: {
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  },
+  scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+
+const sheets = google.sheets({ version: 'v4', auth });
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+
+// Sheet name for responses
+const RESPONSES_SHEET = 'QHLS_Responses';
+
+/**
+ * Get unique zones from JSON file
+ */
+function getZones() {
+  const zones = zonesUnitsData.zones.map(z => z.name);
+  return zones.sort();
+}
+
+/**
+ * Get units for a specific zone from JSON file
+ */
+function getUnits(zoneName) {
+  const zone = zonesUnitsData.zones.find(z => z.name === zoneName);
+  if (!zone) return [];
+  return zone.units.sort();
+}
+
+/**
+ * Get all zones and units from JSON file (flattened)
+ */
+function getAllZonesUnits() {
+  const result = [];
+  zonesUnitsData.zones.forEach(zone => {
+    zone.units.forEach(unit => {
+      result.push({ zone: zone.name, unit: unit });
+    });
+  });
+  return result;
+}
+
+/**
+ * Submit form response to QHLS_Responses sheet
+ * Columns: Zone | Unit | Status | Day | Faculty | Gents | Ladies
+ */
+async function submitResponse(data) {
+  try {
+    const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, gentsCount, ladiesCount } = data;
+    
+    // Determine status text
+    const statusText = qhlsStatus === 'yes' ? 'QHLS ഉണ്ട്' : 'QHLS ഇല്ല';
+    
+    // Prepare row data (Zone, Unit, Status, Day, Faculty, Gents, Ladies)
+    const rowData = [
+      zoneName,
+      unitName,
+      statusText,
+      qhlsStatus === 'yes' ? qhlsDay : '',
+      qhlsStatus === 'yes' ? faculty : '',
+      qhlsStatus === 'yes' ? (parseInt(gentsCount) || 0) : '',
+      qhlsStatus === 'yes' ? (parseInt(ladiesCount) || 0) : '',
+    ];
+
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${RESPONSES_SHEET}!A:G`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: [rowData],
+      },
+    });
+
+    const totalParticipants = qhlsStatus === 'yes' 
+      ? (parseInt(gentsCount) || 0) + (parseInt(ladiesCount) || 0)
+      : 0;
+    return { success: true, totalParticipants };
+  } catch (error) {
+    console.error('Error submitting response:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get all submitted responses from Google Sheets
+ * Columns: Zone | Unit | Status | Day | Faculty | Gents | Ladies
+ */
+async function getAllResponses() {
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${RESPONSES_SHEET}!A:G`,
+    });
+
+    const rows = response.data.values || [];
+    if (rows.length <= 1) return [];
+
+    // Skip header row and map to objects
+    return rows.slice(1).map((row, index) => ({
+      id: index + 1,
+      zone: row[0] || '',
+      unit: row[1] || '',
+      status: row[2] || '',
+      day: row[3] || '',
+      faculty: row[4] || '',
+      gents: parseInt(row[5]) || 0,
+      ladies: parseInt(row[6]) || 0,
+    }));
+  } catch (error) {
+    console.error('Error fetching responses:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get units that have NOT submitted any response
+ */
+async function getMissingUnits() {
+  try {
+    const allZonesUnits = getAllZonesUnits();
+    const responses = await getAllResponses();
+
+    // Get unique unit names that have submitted
+    const submittedUnits = new Set(responses.map(r => `${r.zone}|${r.unit}`));
+
+    // Find units that haven't submitted
+    const missingUnits = allZonesUnits.filter(
+      item => !submittedUnits.has(`${item.zone}|${item.unit}`)
+    );
+
+    // Group by zone for better readability
+    const groupedByZone = {};
+    missingUnits.forEach(item => {
+      if (!groupedByZone[item.zone]) {
+        groupedByZone[item.zone] = [];
+      }
+      groupedByZone[item.zone].push(item.unit);
+    });
+
+    return {
+      totalMissing: missingUnits.length,
+      totalUnits: allZonesUnits.length,
+      byZone: groupedByZone,
+      list: missingUnits,
+    };
+  } catch (error) {
+    console.error('Error getting missing units:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get responses sorted by total participants (descending)
+ */
+async function getTopParticipants(limit = 50) {
+  try {
+    const responses = await getAllResponses();
+    
+    // Add total and sort by it descending
+    const withTotal = responses.map(r => ({
+      ...r,
+      total: r.gents + r.ladies,
+    }));
+    
+    const sorted = withTotal.sort((a, b) => b.total - a.total);
+    
+    return {
+      total: responses.length,
+      responses: sorted.slice(0, limit),
+    };
+  } catch (error) {
+    console.error('Error getting top participants:', error.message);
+    throw error;
+  }
+}
+
+module.exports = {
+  getZones,
+  getUnits,
+  submitResponse,
+  getMissingUnits,
+  getTopParticipants,
+  getAllResponses,
+};
