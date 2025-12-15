@@ -27,7 +27,29 @@ if (process.env.NODE_ENV === 'production') {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const uptime = process.uptime();
+  const memory = process.memoryUsage();
+  
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: {
+      seconds: Math.floor(uptime),
+      formatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${Math.floor(uptime % 60)}s`
+    },
+    memory: {
+      heapUsed: `${Math.round(memory.heapUsed / 1024 / 1024)} MB`,
+      heapTotal: `${Math.round(memory.heapTotal / 1024 / 1024)} MB`,
+      rss: `${Math.round(memory.rss / 1024 / 1024)} MB`
+    },
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0'
+  });
+});
+
+// Simple ping for uptime monitoring
+app.get('/ping', (req, res) => {
+  res.send('pong');
 });
 
 app.listen(PORT, () => {
