@@ -34,6 +34,10 @@ function App() {
   const [zonesLoading, setZonesLoading] = useState(true);
   const [unitsLoading, setUnitsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  
+  // Success popup state
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupData, setPopupData] = useState({ status: '', zone: '', unit: '' });
 
   // Fetch zones on mount
   useEffect(() => {
@@ -123,19 +127,26 @@ function App() {
       return;
     }
 
+    // Store zone and unit names before resetting
+    const submittedZone = formData.zoneName;
+    const submittedUnit = formData.unitName;
+    const submittedStatus = formData.qhlsStatus;
+
     try {
       setLoading(true);
-      const result = await submitForm({
+      await submitForm({
         ...formData,
         gentsCount: formData.qhlsStatus === 'yes' ? (parseInt(formData.gentsCount) || 0) : 0,
         ladiesCount: formData.qhlsStatus === 'yes' ? (parseInt(formData.ladiesCount) || 0) : 0,
       });
       
-      const successMessage = formData.qhlsStatus === 'yes' 
-        ? `വിജയകരമായി സേവ് ചെയ്തു! ആകെ: ${result.totalParticipants} പങ്കാളികൾ`
-        : 'വിജയകരമായി സേവ് ചെയ്തു!';
-      
-      setMessage({ type: 'success', text: successMessage });
+      // Show success popup
+      setPopupData({
+        status: submittedStatus,
+        zone: submittedZone,
+        unit: submittedUnit,
+      });
+      setShowPopup(true);
       
       // Reset form
       setFormData({
@@ -155,11 +166,46 @@ function App() {
     }
   }
 
+  function closePopup() {
+    setShowPopup(false);
+    setPopupData({ status: '', zone: '', unit: '' });
+  }
+
   const totalParticipants = (parseInt(formData.gentsCount) || 0) + (parseInt(formData.ladiesCount) || 0);
   const showQhlsFields = formData.qhlsStatus === 'yes';
 
   return (
     <div className="app">
+      {/* Success Popup Modal */}
+      {showPopup && (
+        <div className="popup-overlay" onClick={closePopup}>
+          <div className="popup-modal" onClick={(e) => e.stopPropagation()}>
+            <p className="popup-received">താങ്കളുടെ മറുപടി സ്വീകരിച്ചിരിക്കുന്നു</p>
+            {popupData.status === 'yes' ? (
+              <>
+                <div className="popup-icon success">✓</div>
+                <h2 className="popup-arabic">جَزَاكَ اللهُ خَيْرًا</h2>
+                <p className="popup-message">
+                  <strong>{popupData.zone}</strong> മണ്ഡലത്തിൽ <strong>{popupData.unit}</strong> ശാഖയിൽ 
+                  QHLS നിലനിർത്തുവാനും പങ്കാളിത്തം കൂട്ടുവാനും അല്ലാഹു തൗഫീഖ് നൽകുമാറാവട്ടെ.
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="popup-icon encourage">🤲</div>
+                <p className="popup-message">
+                  <strong>{popupData.zone}</strong> മണ്ഡലത്തിൽ <strong>{popupData.unit}</strong> ശാഖയിൽ 
+                  QHLS തുടങ്ങാൻ അല്ലാഹു തൗഫീഖ് നൽകുമാറാവട്ടെ.
+                </p>
+              </>
+            )}
+            <button className="popup-close-btn" onClick={closePopup}>
+              ശരി
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="form-container">
         <div className="form-header">
           <h1>QHLS Data Collection</h1>
