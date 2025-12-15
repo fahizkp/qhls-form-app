@@ -49,7 +49,33 @@ function getAllZonesUnits() {
 }
 
 /**
+ * Find existing row index for a zone+unit combination
+ * Returns row number (1-based, including header) or -1 if not found
+ */
+async function findExistingRow(zoneName, unitName) {
+  try {
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `${RESPONSES_SHEET}!A:B`,
+    });
+
+    const rows = response.data.values || [];
+    // Start from row 2 (index 1) to skip header
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0] === zoneName && rows[i][1] === unitName) {
+        return i + 1; // Return 1-based row number
+      }
+    }
+    return -1; // Not found
+  } catch (error) {
+    console.error('Error finding existing row:', error.message);
+    return -1;
+  }
+}
+
+/**
  * Submit form response to QHLS_Responses sheet
+ * If a row exists for the zone+unit, update it. Otherwise, append new row.
  * Columns: Zone | Unit | Status | Day | Faculty | Gents | Ladies
  */
 async function submitResponse(data) {
@@ -70,19 +96,35 @@ async function submitResponse(data) {
       qhlsStatus === 'yes' ? (parseInt(ladiesCount) || 0) : '',
     ];
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${RESPONSES_SHEET}!A:G`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: {
-        values: [rowData],
-      },
-    });
+    // Check if row already exists for this zone+unit
+    const existingRowNum = await findExistingRow(zoneName, unitName);
+
+    if (existingRowNum > 0) {
+      // Update existing row
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${RESPONSES_SHEET}!A${existingRowNum}:G${existingRowNum}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [rowData],
+        },
+      });
+    } else {
+      // Append new row
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${RESPONSES_SHEET}!A:G`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [rowData],
+        },
+      });
+    }
 
     const totalParticipants = qhlsStatus === 'yes' 
       ? (parseInt(gentsCount) || 0) + (parseInt(ladiesCount) || 0)
       : 0;
-    return { success: true, totalParticipants };
+    return { success: true, totalParticipants, updated: existingRowNum > 0 };
   } catch (error) {
     console.error('Error submitting response:', error.message);
     throw error;
