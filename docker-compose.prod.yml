@@ -1,0 +1,38 @@
+# Production docker-compose - pulls images from GitHub Container Registry
+# Usage:
+#   1. Create .env file with your credentials
+#   2. Run: docker-compose -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  server:
+    image: ghcr.io/${GITHUB_REPO}-server:latest
+    container_name: qhls-server
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - SPREADSHEET_ID=${SPREADSHEET_ID}
+      - GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
+      - GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
+    networks:
+      - qhls-network
+    expose:
+      - "5000"
+
+  client:
+    image: ghcr.io/${GITHUB_REPO}-client:latest
+    container_name: qhls-client
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+    networks:
+      - qhls-network
+
+networks:
+  qhls-network:
+    driver: bridge
+

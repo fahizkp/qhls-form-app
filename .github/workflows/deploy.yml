@@ -1,7 +1,10 @@
-name: Build and Deploy
+name: Build Docker Images
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
     branches:
       - main
   workflow_dispatch:
@@ -31,56 +34,53 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Extract metadata for Server
+        id: meta-server
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server
+
       - name: Build and push Server image
         uses: docker/build-push-action@v5
         with:
           context: ./server
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Extract metadata for Client
+        id: meta-client
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client
 
       - name: Build and push Client image
         uses: docker/build-push-action@v5
         with:
           context: ./client
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client:latest
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client:${{ github.sha }}
+          build-args: |
+            REACT_APP_API_URL=https://qhls-form-app.onrender.com
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Deploy to server via SSH
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd ${{ secrets.DEPLOY_PATH }}
-            
-            # Pull latest changes
-            git pull origin main
-            
-            # Create .env file from secrets
-            cat > .env << EOF
-            SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}
-            GOOGLE_SERVICE_ACCOUNT_EMAIL=${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
-            GOOGLE_PRIVATE_KEY=${{ secrets.GOOGLE_PRIVATE_KEY }}
-            EOF
-            
-            # Pull and restart containers
-            docker-compose pull
-            docker-compose up -d --force-recreate
-            
-            # Clean up old images
-            docker image prune -f
-
+      - name: Image URLs
+        run: |
+          echo "### Docker Images Built! :whale:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Server:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Client:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### To deploy manually:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-server:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-client:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker-compose up -d" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
