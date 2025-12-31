@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 
 WORKDIR /app
 
@@ -13,7 +13,9 @@ RUN npm ci
 COPY . .
 
 # Set API URL for production build
-ARG REACT_APP_API_URL=https://qhls-form-app.onrender.com
+# Set API URL for production build
+# Default to empty string to use relative paths (proxy via Nginx)
+ARG REACT_APP_API_URL=""
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 
 # Build the app
