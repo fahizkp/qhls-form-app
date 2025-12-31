@@ -33,7 +33,7 @@ jobs:
         with:
           context: ./client
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.CLIENT_IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.CLIENT_IMAGE_NAME }}:latest
           # REACT_APP_API_URL is defaults to empty string in Dockerfile, so we don't need to pass it
           # unless we want to set it explicitly.
 
@@ -42,7 +42,7 @@ jobs:
         with:
           context: ./server
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.SERVER_IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.SERVER_IMAGE_NAME }}:latest
 
   deploy:
     runs-on: ubuntu-latest
