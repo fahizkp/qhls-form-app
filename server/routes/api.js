@@ -121,7 +121,7 @@ router.post('/submit', async (req, res) => {
       afterRamadhan: qhlsStatus === 'yes' ? afterRamadhan : '',
       gentsCount: qhlsStatus === 'yes' ? (parseInt(gentsCount) || 0) : 0,
       ladiesCount: qhlsStatus === 'yes' ? (parseInt(ladiesCount) || 0) : 0,
-    }, req.body.isUpdate || false);
+    }, req.body.isUpdate || false, req.body.forceAppend || false);
     
     if (result.alreadyExists) {
       return res.status(400).json({ 

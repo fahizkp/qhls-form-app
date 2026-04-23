@@ -52,7 +52,7 @@ router.post('/login', (req, res) => {
 router.get('/responses', async (req, res) => {
   try {
     const responses = await sheetsService.getAllResponses();
-    res.json({ success: true, responses });
+    res.json({ success: true, responses: [...responses].reverse() });
   } catch (error) {
     console.error('GET /admin/responses error:', error.message);
     res.status(500).json({ 

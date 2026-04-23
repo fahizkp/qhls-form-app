@@ -47,6 +47,7 @@ function App() {
   const [showUpdatePopup, setShowUpdatePopup] = useState(false);
   const [existingData, setExistingData] = useState(null);
   const [isUpdateMode, setIsUpdateMode] = useState(false);
+  const [isForceAppend, setIsForceAppend] = useState(false);
 
   // Fetch zones on mount
   useEffect(() => {
@@ -62,6 +63,7 @@ function App() {
     }
     // Reset update mode when zone changes
     setIsUpdateMode(false);
+    setIsForceAppend(false);
     setExistingData(null);
   }, [formData.zoneName]);
 
@@ -180,6 +182,7 @@ function App() {
       await submitForm({
         ...formData,
         isUpdate: isUpdateMode,
+        forceAppend: isForceAppend,
         gentsCount: formData.qhlsStatus === 'yes' ? (parseInt(formData.gentsCount) || 0) : 0,
         ladiesCount: formData.qhlsStatus === 'yes' ? (parseInt(formData.ladiesCount) || 0) : 0,
       });
@@ -208,6 +211,7 @@ function App() {
       });
       setUnits([]);
       setIsUpdateMode(false);
+      setIsForceAppend(false);
       setExistingData(null);
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'സേവ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.' });
@@ -248,6 +252,45 @@ function App() {
     setFormData(prev => ({ ...prev, unitName: '' }));
   }
 
+  function handleAddAnother() {
+    setShowPopup(false);
+    // Keep zone and unit, clear everything else
+    setFormData(prev => ({
+      ...prev,
+      qhlsStatus: '',
+      qhlsDay: '',
+      faculty: '',
+      facultyMobile: '',
+      syllabus: '',
+      sthalam: '',
+      afterRamadhan: '',
+      gentsCount: '',
+      ladiesCount: '',
+    }));
+    setIsUpdateMode(false);
+    setIsForceAppend(true);
+    setExistingData(null);
+  }
+
+  function handleAddNew() {
+    setShowUpdatePopup(false);
+    setIsUpdateMode(false);
+    setIsForceAppend(true);
+    // Just clear fields but keep unit
+    setFormData(prev => ({
+      ...prev,
+      qhlsStatus: '',
+      qhlsDay: '',
+      faculty: '',
+      facultyMobile: '',
+      syllabus: '',
+      sthalam: '',
+      afterRamadhan: '',
+      gentsCount: '',
+      ladiesCount: '',
+    }));
+  }
+
   const totalParticipants = (parseInt(formData.gentsCount) || 0) + (parseInt(formData.ladiesCount) || 0);
   const showQhlsFields = formData.qhlsStatus === 'yes';
 
@@ -276,9 +319,14 @@ function App() {
                 </p>
               </>
             )}
-            <button className="popup-close-btn" onClick={closePopup}>
-              ശരി
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="popup-close-btn" style={{ background: '#334155', flex: 1 }} onClick={closePopup}>
+                ശരി
+              </button>
+              <button className="popup-close-btn" style={{ flex: 1.5 }} onClick={handleAddAnother}>
+                മറ്റൊരു QHLS കൂടി ഉണ്ട്
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -318,20 +366,29 @@ function App() {
                 )}
               </div>
             )}
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  className="popup-close-btn" 
+                  style={{ background: '#334155', flex: 1 }} 
+                  onClick={handleUpdateCancel}
+                >
+                  വേണ്ട
+                </button>
+                <button 
+                  className="popup-close-btn" 
+                  style={{ flex: 1 }} 
+                  onClick={handleUpdateConfirm}
+                >
+                  അപ്ഡേറ്റ് ചെയ്യണം
+                </button>
+              </div>
               <button 
                 className="popup-close-btn" 
-                style={{ background: '#334155', flex: 1 }} 
-                onClick={handleUpdateCancel}
+                style={{ background: '#0d9488' }} 
+                onClick={handleAddNew}
               >
-                വേണ്ട
-              </button>
-              <button 
-                className="popup-close-btn" 
-                style={{ flex: 1 }} 
-                onClick={handleUpdateConfirm}
-              >
-                അപ്ഡേറ്റ് ചെയ്യണം
+                പുതിയ QHLS ചേർക്കുക
               </button>
             </div>
           </div>

@@ -79,8 +79,8 @@ async function findExistingRow(zoneName, unitName) {
     });
 
     const rows = response.data.values || [];
-    // Start from row 2 (index 1) to skip header
-    for (let i = 1; i < rows.length; i++) {
+    // Start from the end to find the latest submission
+    for (let i = rows.length - 1; i >= 1; i--) {
       if (rows[i][0] === zoneName && rows[i][1] === unitName) {
         return i + 1; // Return 1-based row number
       }
@@ -97,7 +97,7 @@ async function findExistingRow(zoneName, unitName) {
  * If a row exists for the zone+unit, update it. Otherwise, append new row.
  * Columns: Zone | Unit | Status | Day | Faculty | Gents | Ladies
  */
-async function submitResponse(data, isUpdate = false) {
+async function submitResponse(data, isUpdate = false, forceAppend = false) {
   try {
     const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, facultyMobile, syllabus, sthalam, afterRamadhan, gentsCount, ladiesCount } = data;
     
@@ -122,7 +122,7 @@ async function submitResponse(data, isUpdate = false) {
     // Check if row already exists for this zone+unit
     const existingRowNum = await findExistingRow(zoneName, unitName);
 
-    if (existingRowNum > 0 && !isUpdate) {
+    if (existingRowNum > 0 && !isUpdate && !forceAppend) {
       // Return that it already exists instead of updating
       return { success: false, alreadyExists: true };
     } 
@@ -165,7 +165,13 @@ async function submitResponse(data, isUpdate = false) {
 async function getExistingSubmission(zoneName, unitName) {
   try {
     const responses = await getAllResponses();
-    return responses.find(r => r.zone === zoneName && r.unit === unitName) || null;
+    // Search from the end of the array to get the latest submission
+    for (let i = responses.length - 1; i >= 0; i--) {
+      if (responses[i].zone === zoneName && responses[i].unit === unitName) {
+        return responses[i];
+      }
+    }
+    return null;
   } catch (error) {
     console.error('Error getting existing submission:', error.message);
     return null;
@@ -186,8 +192,8 @@ async function getAllResponses() {
     const rows = response.data.values || [];
     if (rows.length <= 1) return [];
 
-    // Skip header row and map to objects
-    return rows.slice(1).map((row, index) => ({
+    // Skip header row and map to objects, then reverse to show latest first
+    const mappedRows = rows.slice(1).map((row, index) => ({
       id: index + 1,
       zone: row[0] || '',
       unit: row[1] || '',
@@ -201,6 +207,8 @@ async function getAllResponses() {
       gents: parseInt(row[9]) || 0,
       ladies: parseInt(row[10]) || 0,
     }));
+
+    return mappedRows;
   } catch (error) {
     console.error('Error fetching responses:', error.message);
     throw error;
