@@ -71,12 +71,8 @@ jobs:
           script: |
             cd /srv/apps/qhls-form-app
             
-            # Create .env file for secrets
-            echo "DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}" > .env
-            echo "SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}" >> .env
-            echo "GOOGLE_SERVICE_ACCOUNT_EMAIL=${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}" >> .env
-            echo "GOOGLE_PRIVATE_KEY=\"${{ secrets.GOOGLE_PRIVATE_KEY }}\"" >> .env
-            echo "CORS_ORIGIN=https://qhls.wisdommlpe.site" >> .env
+            # Ensure we are in the right directory
+            # (Note: .env file is managed manually on the server)
             
             # Login to GHCR (using existing token for convenience)
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin

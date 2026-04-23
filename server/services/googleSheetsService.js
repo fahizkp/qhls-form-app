@@ -4,16 +4,35 @@ const { google } = require('googleapis');
 const zonesUnitsData = require('../data/zonesUnits.json');
 
 // Initialize Google Sheets API
-const auth = new google.auth.GoogleAuth({
-  credentials: {
-    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  },
+const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY;
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+
+if (!GOOGLE_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PRIVATE_KEY || !SPREADSHEET_ID) {
+  console.error('CRITICAL ERROR: Missing Google Sheets configuration environment variables.');
+  if (!GOOGLE_SERVICE_ACCOUNT_EMAIL) console.error('- GOOGLE_SERVICE_ACCOUNT_EMAIL is missing or empty');
+  if (!GOOGLE_PRIVATE_KEY) console.error('- GOOGLE_PRIVATE_KEY is missing or empty');
+  if (!SPREADSHEET_ID) console.error('- SPREADSHEET_ID is missing or empty');
+}
+
+// Create auth config
+const authConfig = {
   scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-});
+};
+
+// Only add credentials if they are provided
+if (GOOGLE_SERVICE_ACCOUNT_EMAIL && GOOGLE_PRIVATE_KEY) {
+  authConfig.credentials = {
+    client_email: GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  };
+} else {
+  console.warn('Google Sheets: Initializing without explicit credentials. Will attempt to use Application Default Credentials.');
+}
+
+const auth = new google.auth.GoogleAuth(authConfig);
 
 const sheets = google.sheets({ version: 'v4', auth });
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
 // Sheet name for responses
 const RESPONSES_SHEET = 'QHLS_Responses';
