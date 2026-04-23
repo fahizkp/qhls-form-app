@@ -15,7 +15,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
-      - "traefik.http.routers.qhls-backend.rule=Host(`qhls.wisdommlpe.site`) && (PathPrefix(`/api`) || PathPrefix(`/admin`))"
+      - "traefik.http.routers.qhls-backend.rule=Host(`qhls.wisdommlpe.site`) && PathPrefix(`/api`, `/admin`)"
       - "traefik.http.routers.qhls-backend.entrypoints=websecure"
       - "traefik.http.routers.qhls-backend.tls=true"
       - "traefik.http.routers.qhls-backend.tls.certresolver=myresolver"
