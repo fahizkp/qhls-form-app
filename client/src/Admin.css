@@ -280,6 +280,11 @@
   border-color: #14b8a6;
 }
 
+.zone-filter option {
+  background-color: #1e293b;
+  color: #fff;
+}
+
 .refresh-btn {
   padding: 10px 16px;
   font-size: 0.85rem;
