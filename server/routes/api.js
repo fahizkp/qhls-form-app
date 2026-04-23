@@ -46,6 +46,25 @@ router.get('/units', (req, res) => {
 });
 
 /**
+ * GET /api/check-submission?zone=X&unit=Y
+ * Checks if a unit has already submitted and returns the data
+ */
+router.get('/check-submission', async (req, res) => {
+  try {
+    const { zone, unit } = req.query;
+    if (!zone || !unit) {
+      return res.status(400).json({ success: false, error: 'Zone and Unit are required' });
+    }
+
+    const submission = await sheetsService.getExistingSubmission(zone, unit);
+    res.json({ success: true, exists: !!submission, submission });
+  } catch (error) {
+    console.error('GET /check-submission error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to check submission' });
+  }
+});
+
+/**
  * POST /api/submit
  * Saves form data into QHLS_Responses sheet
  */
@@ -102,12 +121,13 @@ router.post('/submit', async (req, res) => {
       afterRamadhan: qhlsStatus === 'yes' ? afterRamadhan : '',
       gentsCount: qhlsStatus === 'yes' ? (parseInt(gentsCount) || 0) : 0,
       ladiesCount: qhlsStatus === 'yes' ? (parseInt(ladiesCount) || 0) : 0,
-    });
+    }, req.body.isUpdate || false);
     
     if (result.alreadyExists) {
       return res.status(400).json({ 
         success: false, 
-        error: `${unitName} ശാഖയുടെ വിവരങ്ങൾ നേരത്തെ തന്നെ സമർപ്പിക്കപ്പെട്ടിട്ടുണ്ട്. എന്തെങ്കിലും മാറ്റങ്ങൾ വരുത്തണമെങ്കിൽ അഡ്മിനുമായി ബന്ധപ്പെടുക.` 
+        alreadyExists: true,
+        error: `${unitName} ശാഖയുടെ വിവരങ്ങൾ നേരത്തെ തന്നെ സമർപ്പിക്കപ്പെട്ടിട്ടുണ്ട്.` 
       });
     }
 

@@ -97,7 +97,7 @@ async function findExistingRow(zoneName, unitName) {
  * If a row exists for the zone+unit, update it. Otherwise, append new row.
  * Columns: Zone | Unit | Status | Day | Faculty | Gents | Ladies
  */
-async function submitResponse(data) {
+async function submitResponse(data, isUpdate = false) {
   try {
     const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, facultyMobile, syllabus, sthalam, afterRamadhan, gentsCount, ladiesCount } = data;
     
@@ -122,9 +122,21 @@ async function submitResponse(data) {
     // Check if row already exists for this zone+unit
     const existingRowNum = await findExistingRow(zoneName, unitName);
 
-    if (existingRowNum > 0) {
+    if (existingRowNum > 0 && !isUpdate) {
       // Return that it already exists instead of updating
       return { success: false, alreadyExists: true };
+    } 
+
+    if (existingRowNum > 0 && isUpdate) {
+      // Update existing row
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${RESPONSES_SHEET}!A${existingRowNum}:K${existingRowNum}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [rowData],
+        },
+      });
     } else {
       // Append new row
       await sheets.spreadsheets.values.append({
@@ -144,6 +156,19 @@ async function submitResponse(data) {
   } catch (error) {
     console.error('Error submitting response:', error.message);
     throw error;
+  }
+}
+
+/**
+ * Get existing submission for a zone+unit
+ */
+async function getExistingSubmission(zoneName, unitName) {
+  try {
+    const responses = await getAllResponses();
+    return responses.find(r => r.zone === zoneName && r.unit === unitName) || null;
+  } catch (error) {
+    console.error('Error getting existing submission:', error.message);
+    return null;
   }
 }
 
@@ -251,4 +276,5 @@ module.exports = {
   getMissingUnits,
   getTopParticipants,
   getAllResponses,
+  getExistingSubmission,
 };

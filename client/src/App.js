@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchZones, fetchUnits, submitForm } from './services/api';
+import { fetchZones, fetchUnits, submitForm, checkSubmission } from './services/api';
 import './App.css';
 
 // Days of the week in Malayalam
@@ -42,6 +42,11 @@ function App() {
   // Success popup state
   const [showPopup, setShowPopup] = useState(false);
   const [popupData, setPopupData] = useState({ status: '', zone: '', unit: '' });
+  
+  // Update confirmation popup state
+  const [showUpdatePopup, setShowUpdatePopup] = useState(false);
+  const [existingData, setExistingData] = useState(null);
+  const [isUpdateMode, setIsUpdateMode] = useState(false);
 
   // Fetch zones on mount
   useEffect(() => {
@@ -55,7 +60,29 @@ function App() {
     } else {
       setUnits([]);
     }
+    // Reset update mode when zone changes
+    setIsUpdateMode(false);
+    setExistingData(null);
   }, [formData.zoneName]);
+
+  // Check for existing submission when unit changes
+  useEffect(() => {
+    if (formData.zoneName && formData.unitName && !isUpdateMode) {
+      checkExistingSubmission(formData.zoneName, formData.unitName);
+    }
+  }, [formData.unitName]);
+
+  async function checkExistingSubmission(zone, unit) {
+    try {
+      const data = await checkSubmission(zone, unit);
+      if (data.exists) {
+        setExistingData(data.submission);
+        setShowUpdatePopup(true);
+      }
+    } catch (error) {
+      console.error('Error checking submission:', error);
+    }
+  }
 
   async function loadZones() {
     try {
@@ -152,6 +179,7 @@ function App() {
       setLoading(true);
       await submitForm({
         ...formData,
+        isUpdate: isUpdateMode,
         gentsCount: formData.qhlsStatus === 'yes' ? (parseInt(formData.gentsCount) || 0) : 0,
         ladiesCount: formData.qhlsStatus === 'yes' ? (parseInt(formData.ladiesCount) || 0) : 0,
       });
@@ -179,6 +207,8 @@ function App() {
         ladiesCount: '',
       });
       setUnits([]);
+      setIsUpdateMode(false);
+      setExistingData(null);
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'സേവ് ചെയ്യാനായില്ല. വീണ്ടും ശ്രമിക്കുക.' });
     } finally {
@@ -189,6 +219,33 @@ function App() {
   function closePopup() {
     setShowPopup(false);
     setPopupData({ status: '', zone: '', unit: '' });
+  }
+
+  function handleUpdateConfirm() {
+    if (!existingData) return;
+    
+    // Pre-fill form with existing data
+    setFormData({
+      zoneName: existingData.zone,
+      unitName: existingData.unit,
+      qhlsStatus: existingData.status === 'QHLS ഉണ്ട്' ? 'yes' : 'no',
+      qhlsDay: existingData.day || '',
+      faculty: existingData.faculty || '',
+      facultyMobile: existingData.facultyMobile || '',
+      syllabus: existingData.syllabus || '',
+      sthalam: existingData.sthalam || '',
+      afterRamadhan: existingData.afterRamadhan || '',
+      gentsCount: existingData.gents || 0,
+      ladiesCount: existingData.ladies || 0,
+    });
+    
+    setIsUpdateMode(true);
+    setShowUpdatePopup(false);
+  }
+
+  function handleUpdateCancel() {
+    setShowUpdatePopup(false);
+    setFormData(prev => ({ ...prev, unitName: '' }));
   }
 
   const totalParticipants = (parseInt(formData.gentsCount) || 0) + (parseInt(formData.ladiesCount) || 0);
@@ -222,6 +279,34 @@ function App() {
             <button className="popup-close-btn" onClick={closePopup}>
               ശരി
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Update Confirmation Modal */}
+      {showUpdatePopup && (
+        <div className="popup-overlay">
+          <div className="popup-modal">
+            <div className="popup-icon encourage">📝</div>
+            <p className="popup-message">
+              <strong>{formData.unitName}</strong> ശാഖയുടെ വിവരങ്ങൾ നേരത്തെ തന്നെ ഫിൽ ചെയ്തിട്ടുണ്ട്. ഇത് അപ്ഡേറ്റ് ചെയ്യണോ?
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                className="popup-close-btn" 
+                style={{ background: '#334155', flex: 1 }} 
+                onClick={handleUpdateCancel}
+              >
+                അല്ല
+              </button>
+              <button 
+                className="popup-close-btn" 
+                style={{ flex: 1 }} 
+                onClick={handleUpdateConfirm}
+              >
+                അതെ, അപ്ഡേറ്റ് ചെയ്യണം
+              </button>
+            </div>
           </div>
         </div>
       )}

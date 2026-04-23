@@ -29,6 +29,20 @@ export async function fetchUnits(zone) {
 }
 
 /**
+ * Check if a unit has already submitted
+ */
+export async function checkSubmission(zone, unit) {
+  const response = await fetch(`${API_BASE}/api/check-submission?zone=${encodeURIComponent(zone)}&unit=${encodeURIComponent(unit)}`);
+  const data = await response.json();
+  
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to check submission');
+  }
+  
+  return data;
+}
+
+/**
  * Submit form data
  */
 export async function submitForm(formData) {
