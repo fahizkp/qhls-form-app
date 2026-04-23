@@ -21,6 +21,10 @@ function App() {
     qhlsStatus: '', // 'yes' or 'no'
     qhlsDay: '',
     faculty: '',
+    facultyMobile: '',
+    syllabus: '',
+    sthalam: '',
+    afterRamadhan: '',
     gentsCount: '',
     ladiesCount: '',
   });
@@ -93,6 +97,10 @@ function App() {
       ...(status === 'no' ? {
         qhlsDay: '',
         faculty: '',
+        facultyMobile: '',
+        syllabus: '',
+        sthalam: '',
+        afterRamadhan: '',
         gentsCount: '',
         ladiesCount: '',
       } : {})
@@ -111,6 +119,14 @@ function App() {
     if (qhlsStatus === 'yes') {
       if (!qhlsDay) return 'ദയവായി QHLS ദിവസം തിരഞ്ഞെടുക്കുക';
       if (!faculty.trim()) return 'ദയവായി ഫാക്കൽറ്റിയുടെ പേര് നൽകുക';
+      
+      const mobileRegex = /^[0-9]{10}$/;
+      if (!mobileRegex.test(formData.facultyMobile)) return 'ദയവായി 10 അക്ക മൊബൈൽ നമ്പർ നൽകുക';
+      
+      if (!syllabus.trim()) return 'ദയവായി സിലബസ് നൽകുക';
+      if (!sthalam.trim()) return 'ദയവായി സ്ഥലം നൽകുക';
+      if (!afterRamadhan) return 'റമദാനിന് ശേഷം QHLS നടക്കുന്നുണ്ടോ എന്ന് തിരഞ്ഞെടുക്കുക';
+      
       if (gentsCount === '' || gentsCount < 0) return 'ദയവായി പുരുഷന്മാരുടെ എണ്ണം നൽകുക';
       if (ladiesCount === '' || ladiesCount < 0) return 'ദയവായി സ്ത്രീകളുടെ എണ്ണം നൽകുക';
     }
@@ -155,6 +171,10 @@ function App() {
         qhlsStatus: '',
         qhlsDay: '',
         faculty: '',
+        facultyMobile: '',
+        syllabus: '',
+        sthalam: '',
+        afterRamadhan: '',
         gentsCount: '',
         ladiesCount: '',
       });
@@ -290,7 +310,7 @@ function App() {
             <>
               {/* QHLS Day */}
               <div className="form-group">
-                <label htmlFor="qhlsDay">QHLS ദിവസം <span className="required">*</span></label>
+                <label htmlFor="qhlsDay">ദിവസം <span className="required">*</span></label>
                 <select
                   id="qhlsDay"
                   name="qhlsDay"
@@ -315,6 +335,73 @@ function App() {
                   onChange={handleChange}
                   placeholder="ഫാക്കൽറ്റിയുടെ പേര് നൽകുക"
                 />
+              </div>
+
+              {/* Faculty Mobile */}
+              <div className="form-group">
+                <label htmlFor="facultyMobile">ഫാക്കൽറ്റി മൊബൈൽ നമ്പർ <span className="required">*</span></label>
+                <input
+                  type="tel"
+                  id="facultyMobile"
+                  name="facultyMobile"
+                  value={formData.facultyMobile}
+                  onChange={handleChange}
+                  placeholder="10 അക്ക നമ്പർ"
+                  maxLength="10"
+                />
+              </div>
+
+              {/* Syllabus */}
+              <div className="form-group">
+                <label htmlFor="syllabus">സിലബസ് (സൂറത്തിന്റെ പേര്) <span className="required">*</span></label>
+                <input
+                  type="text"
+                  id="syllabus"
+                  name="syllabus"
+                  value={formData.syllabus}
+                  onChange={handleChange}
+                  placeholder="സിലബസ് നൽകുക"
+                />
+              </div>
+
+              {/* Sthalam */}
+              <div className="form-group">
+                <label htmlFor="sthalam">സ്ഥലം <span className="required">*</span></label>
+                <input
+                  type="text"
+                  id="sthalam"
+                  name="sthalam"
+                  value={formData.sthalam}
+                  onChange={handleChange}
+                  placeholder="സ്ഥലം നൽകുക"
+                />
+              </div>
+
+              {/* After Ramadhan Status */}
+              <div className="form-group">
+                <label>റമദാനിന് ശേഷം QHLS നടക്കുന്നുണ്ടോ? <span className="required">*</span></label>
+                <div className="radio-group">
+                  <label className={`radio-option ${formData.afterRamadhan === 'yes' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="afterRamadhan"
+                      value="yes"
+                      checked={formData.afterRamadhan === 'yes'}
+                      onChange={handleChange}
+                    />
+                    <span className="radio-label">ഉണ്ട്</span>
+                  </label>
+                  <label className={`radio-option ${formData.afterRamadhan === 'no' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="afterRamadhan"
+                      value="no"
+                      checked={formData.afterRamadhan === 'no'}
+                      onChange={handleChange}
+                    />
+                    <span className="radio-label">ഇല്ല</span>
+                  </label>
+                </div>
               </div>
 
               {/* Participant Counts */}

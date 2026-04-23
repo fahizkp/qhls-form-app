@@ -80,18 +80,22 @@ async function findExistingRow(zoneName, unitName) {
  */
 async function submitResponse(data) {
   try {
-    const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, gentsCount, ladiesCount } = data;
+    const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, facultyMobile, syllabus, sthalam, afterRamadhan, gentsCount, ladiesCount } = data;
     
     // Determine status text
     const statusText = qhlsStatus === 'yes' ? 'QHLS ഉണ്ട്' : 'QHLS ഇല്ല';
     
-    // Prepare row data (Zone, Unit, Status, Day, Faculty, Gents, Ladies)
+    // Prepare row data (Zone, Unit, Status, Day, Faculty, Faculty Mobile, Syllabus, Sthalam, After Ramadhan, Gents, Ladies)
     const rowData = [
       zoneName,
       unitName,
       statusText,
       qhlsStatus === 'yes' ? qhlsDay : '',
       qhlsStatus === 'yes' ? faculty : '',
+      qhlsStatus === 'yes' ? facultyMobile : '',
+      qhlsStatus === 'yes' ? syllabus : '',
+      qhlsStatus === 'yes' ? sthalam : '',
+      qhlsStatus === 'yes' ? afterRamadhan : '',
       qhlsStatus === 'yes' ? (parseInt(gentsCount) || 0) : '',
       qhlsStatus === 'yes' ? (parseInt(ladiesCount) || 0) : '',
     ];
@@ -100,20 +104,13 @@ async function submitResponse(data) {
     const existingRowNum = await findExistingRow(zoneName, unitName);
 
     if (existingRowNum > 0) {
-      // Update existing row
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${RESPONSES_SHEET}!A${existingRowNum}:G${existingRowNum}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: {
-          values: [rowData],
-        },
-      });
+      // Return that it already exists instead of updating
+      return { success: false, alreadyExists: true };
     } else {
       // Append new row
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${RESPONSES_SHEET}!A:G`,
+        range: `${RESPONSES_SHEET}!A:K`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [rowData],
@@ -133,13 +130,13 @@ async function submitResponse(data) {
 
 /**
  * Get all submitted responses from Google Sheets
- * Columns: Zone | Unit | Status | Day | Faculty | Gents | Ladies
+ * Columns: Zone | Unit | Status | Day | Faculty | Faculty Mobile | Syllabus | Sthalam | After Ramadhan | Gents | Ladies
  */
 async function getAllResponses() {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${RESPONSES_SHEET}!A:G`,
+      range: `${RESPONSES_SHEET}!A:K`,
     });
 
     const rows = response.data.values || [];
@@ -153,8 +150,12 @@ async function getAllResponses() {
       status: row[2] || '',
       day: row[3] || '',
       faculty: row[4] || '',
-      gents: parseInt(row[5]) || 0,
-      ladies: parseInt(row[6]) || 0,
+      facultyMobile: row[5] || '',
+      syllabus: row[6] || '',
+      sthalam: row[7] || '',
+      afterRamadhan: row[8] || '',
+      gents: parseInt(row[9]) || 0,
+      ladies: parseInt(row[10]) || 0,
     }));
   } catch (error) {
     console.error('Error fetching responses:', error.message);

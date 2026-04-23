@@ -27,7 +27,7 @@
 }
 
 body {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Anek Malayalam', 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
   min-height: 100vh;
   color: var(--text-primary);
@@ -129,6 +129,7 @@ form {
 /* Input Styles */
 input[type="text"],
 input[type="number"],
+input[type="tel"],
 input[type="date"],
 select {
   width: 100%;
@@ -146,6 +147,7 @@ select {
 
 input[type="text"]:focus,
 input[type="number"]:focus,
+input[type="tel"]:focus,
 input[type="date"]:focus,
 select:focus {
   outline: none;

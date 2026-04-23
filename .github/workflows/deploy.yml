@@ -57,7 +57,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.deploy.yml"
+          source: "docker-compose.yml"
           target: "/srv/apps/qhls-form-app/"
 
       - name: Deploy
@@ -69,7 +69,7 @@ jobs:
           script: |
             mkdir -p /srv/apps/qhls-form-app
             cd /srv/apps/qhls-form-app
-            mv docker-compose.deploy.yml docker-compose.yml
+            # docker-compose.yml is already copied with the correct name
             
             # Create .env file for secrets
             echo "DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}" > .env

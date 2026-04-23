@@ -257,6 +257,14 @@ function Admin() {
                       <div className="card-details">
                         <span>📅 {row.day}</span>
                         <span>👤 {row.faculty}</span>
+                        <span>📱 {row.facultyMobile}</span>
+                      </div>
+                      <div className="card-details">
+                        <span>📚 {row.syllabus}</span>
+                        <span>📍 {row.sthalam}</span>
+                      </div>
+                      <div className="card-details">
+                        <span>🌙 റമദാനിന് ശേഷം: {row.afterRamadhan === 'yes' ? 'ഉണ്ട്' : 'ഇല്ല'}</span>
                       </div>
                       <div className="card-counts">
                         <div className="count-item">

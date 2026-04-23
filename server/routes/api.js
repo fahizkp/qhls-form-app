@@ -51,7 +51,19 @@ router.get('/units', (req, res) => {
  */
 router.post('/submit', async (req, res) => {
   try {
-    const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, gentsCount, ladiesCount } = req.body;
+    const { 
+      zoneName, 
+      unitName, 
+      qhlsStatus, 
+      qhlsDay, 
+      faculty, 
+      facultyMobile, 
+      syllabus, 
+      sthalam, 
+      afterRamadhan, 
+      gentsCount, 
+      ladiesCount 
+    } = req.body;
 
     // Validate required fields
     const errors = [];
@@ -63,6 +75,10 @@ router.post('/submit', async (req, res) => {
     if (qhlsStatus === 'yes') {
       if (!qhlsDay) errors.push('QHLS Day is required');
       if (!faculty) errors.push('Faculty is required');
+      if (!facultyMobile) errors.push('Faculty Mobile is required');
+      if (!syllabus) errors.push('Syllabus is required');
+      if (!sthalam) errors.push('Sthalam is required');
+      if (!afterRamadhan) errors.push('After Ramadhan status is required');
       if (gentsCount === undefined || gentsCount === '') errors.push('Gents Count is required');
       if (ladiesCount === undefined || ladiesCount === '') errors.push('Ladies Count is required');
     }
@@ -80,9 +96,20 @@ router.post('/submit', async (req, res) => {
       qhlsStatus,
       qhlsDay: qhlsStatus === 'yes' ? qhlsDay : '',
       faculty: qhlsStatus === 'yes' ? faculty : '',
+      facultyMobile: qhlsStatus === 'yes' ? facultyMobile : '',
+      syllabus: qhlsStatus === 'yes' ? syllabus : '',
+      sthalam: qhlsStatus === 'yes' ? sthalam : '',
+      afterRamadhan: qhlsStatus === 'yes' ? afterRamadhan : '',
       gentsCount: qhlsStatus === 'yes' ? (parseInt(gentsCount) || 0) : 0,
       ladiesCount: qhlsStatus === 'yes' ? (parseInt(ladiesCount) || 0) : 0,
     });
+    
+    if (result.alreadyExists) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `${unitName} ശാഖയുടെ വിവരങ്ങൾ നേരത്തെ തന്നെ സമർപ്പിക്കപ്പെട്ടിട്ടുണ്ട്. എന്തെങ്കിലും മാറ്റങ്ങൾ വരുത്തണമെങ്കിൽ അഡ്മിനുമായി ബന്ധപ്പെടുക.` 
+      });
+    }
 
     res.json({ 
       success: true, 

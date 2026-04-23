@@ -1,10 +1,28 @@
 version: '3.8'
 
 services:
+  client:
+    image: ghcr.io/fahizkp/qhls-client:latest
+    container_name: qhls-client
+    restart: unless-stopped
+    depends_on:
+      - server
+    networks:
+      - web
+      - internal
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.qhls-client.rule=Host(`qhls.wisdommlpe.site`)"
+      - "traefik.http.routers.qhls-client.entrypoints=websecure"
+      - "traefik.http.routers.qhls-client.tls.certresolver=myresolver"
+      - "traefik.http.services.qhls-client.loadbalancer.server.port=80"
+      # Middleware redirect http to https (optional, depends on global config)
+      # - "traefik.http.routers.qhls-client-http.rule=Host(`${DOMAIN_NAME}`)"
+      # - "traefik.http.routers.qhls-client-http.entrypoints=web"
+      # - "traefik.http.routers.qhls-client-http.middlewares=redirect@file"
+
   server:
-    build:
-      context: ./server
-      dockerfile: Dockerfile
+    image: ghcr.io/fahizkp/qhls-server:latest
     container_name: qhls-server
     restart: unless-stopped
     environment:
@@ -14,24 +32,11 @@ services:
       - GOOGLE_SERVICE_ACCOUNT_EMAIL=${GOOGLE_SERVICE_ACCOUNT_EMAIL}
       - GOOGLE_PRIVATE_KEY=${GOOGLE_PRIVATE_KEY}
     networks:
-      - qhls-network
-    expose:
-      - "5000"
-
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    container_name: qhls-client
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - server
-    networks:
-      - qhls-network
+      - web
+      - internal
+    # Server is internal only, accessed by client container via 'http://server:5000'
 
 networks:
-  qhls-network:
-    driver: bridge
-
+  web:
+    external: true
+  internal:
