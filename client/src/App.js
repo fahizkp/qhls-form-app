@@ -109,7 +109,7 @@ function App() {
   }
 
   function validateForm() {
-    const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, gentsCount, ladiesCount } = formData;
+    const { zoneName, unitName, qhlsStatus, qhlsDay, faculty, syllabus, sthalam, afterRamadhan, gentsCount, ladiesCount } = formData;
     
     if (!zoneName) return 'ദയവായി മണ്ഡലം തിരഞ്ഞെടുക്കുക';
     if (!unitName) return 'ദയവായി ശാഖ തിരഞ്ഞെടുക്കുക';
