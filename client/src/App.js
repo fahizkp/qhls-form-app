@@ -291,20 +291,47 @@ function App() {
             <p className="popup-message">
               <strong>{formData.unitName}</strong> ശാഖയുടെ വിവരങ്ങൾ നേരത്തെ തന്നെ ഫിൽ ചെയ്തിട്ടുണ്ട്. ഇത് അപ്ഡേറ്റ് ചെയ്യണോ?
             </p>
+
+            {existingData && (
+              <div className="update-summary">
+                <div className="summary-item">
+                  <span className="summary-label">സ്റ്റാറ്റസ്:</span>
+                  <span className="summary-value">{existingData.status}</span>
+                </div>
+                {existingData.status === 'QHLS ഉണ്ട്' && (
+                  <>
+                    <div className="summary-item">
+                      <span className="summary-label">ദിവസം:</span>
+                      <span className="summary-value">{existingData.day}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">ഫാക്കൽറ്റി:</span>
+                      <span className="summary-value">{existingData.faculty}</span>
+                    </div>
+                    <div className="summary-item">
+                      <span className="summary-label">പങ്കാളിത്തം:</span>
+                      <span className="summary-value">
+                        {existingData.gents} + {existingData.ladies} ({existingData.gents + existingData.ladies})
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: '12px' }}>
               <button 
                 className="popup-close-btn" 
                 style={{ background: '#334155', flex: 1 }} 
                 onClick={handleUpdateCancel}
               >
-                അല്ല
+                വേണ്ട
               </button>
               <button 
                 className="popup-close-btn" 
                 style={{ flex: 1 }} 
                 onClick={handleUpdateConfirm}
               >
-                അതെ, അപ്ഡേറ്റ് ചെയ്യണം
+                അപ്ഡേറ്റ് ചെയ്യണം
               </button>
             </div>
           </div>

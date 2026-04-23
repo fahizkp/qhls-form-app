@@ -1,0 +1,11 @@
+DOMAIN_NAME=qhls.wisdommlpe.site
+SPREADSHEET_ID=1g9U-GMOr2ZJE--iuchYW4jucTkEwffrVqjbNJtlXFHM
+GOOGLE_SERVICE_ACCOUNT_EMAIL=sheets@wisdommlpe.iam.gserviceaccount.com
+
+# PASTE YOUR FULL PRIVATE KEY BELOW (Between the quotes)
+# It should look like "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+GOOGLE_PRIVATE_KEY="PASTE_FULL_PRIVATE_KEY_FROM_JSON_HERE"
+
+CORS_ORIGIN=https://qhls.wisdommlpe.site
+NODE_ENV=development
+PORT=5000
