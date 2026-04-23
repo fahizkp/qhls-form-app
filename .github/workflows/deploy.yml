@@ -7,8 +7,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  CLIENT_IMAGE_NAME: qhls-client
-  SERVER_IMAGE_NAME: qhls-server
+  IMAGE_NAME_FRONTEND: qhls-frontend
+  IMAGE_NAME_BACKEND: qhls-backend
 
 jobs:
   build-and-push:
@@ -28,21 +28,21 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Client image
+      - name: Build and push Frontend image
         uses: docker/build-push-action@v4
         with:
           context: ./client
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.CLIENT_IMAGE_NAME }}:latest
-          # REACT_APP_API_URL is defaults to empty string in Dockerfile, so we don't need to pass it
-          # unless we want to set it explicitly.
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_FRONTEND }}:latest
+          build-args: |
+            REACT_APP_API_URL=https://qhls.wisdommlpe.site
 
-      - name: Build and push Server image
+      - name: Build and push Backend image
         uses: docker/build-push-action@v4
         with:
           context: ./server
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.SERVER_IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME_BACKEND }}:latest
 
   deploy:
     runs-on: ubuntu-latest
@@ -69,14 +69,13 @@ jobs:
           script: |
             mkdir -p /srv/apps/qhls-form-app
             cd /srv/apps/qhls-form-app
-            # docker-compose.yml is already copied with the correct name
             
             # Create .env file for secrets
             echo "DOMAIN_NAME=${{ secrets.DOMAIN_NAME }}" > .env
             echo "SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }}" >> .env
             echo "GOOGLE_SERVICE_ACCOUNT_EMAIL=${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}" >> .env
-            # Handle multiline private key safely
             echo "GOOGLE_PRIVATE_KEY=\"${{ secrets.GOOGLE_PRIVATE_KEY }}\"" >> .env
+            echo "CORS_ORIGIN=https://qhls.wisdommlpe.site" >> .env
             
             # Pull latest images
             docker-compose pull

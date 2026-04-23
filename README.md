@@ -107,7 +107,7 @@ Edit `server/data/zonesUnits.json` with your actual zones and units.
 
 ### Step 2: Configure Environment
 
-Create a `.env` file in the `server` folder:
+Create a `.env` file in the root directory (for Docker) or in the `server` folder (for local development):
 
 ```env
 # Google Sheets Configuration
@@ -117,6 +117,8 @@ GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END
 
 # Server Configuration
 PORT=5000
+NODE_ENV=production
+CORS_ORIGIN=https://qhls.wisdommlpe.site
 ```
 
 **Important:** The `GOOGLE_PRIVATE_KEY` must be wrapped in double quotes and have `\n` for line breaks.
@@ -217,7 +219,10 @@ The server will serve the React build automatically.
 
 ```
 FormApp/
-├── server/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml              # GitHub Actions deployment
+├── server/                         # Backend (backend service)
 │   ├── index.js                    # Express server
 │   ├── data/
 │   │   └── zonesUnits.json         # Zone/Unit reference data
@@ -226,8 +231,9 @@ FormApp/
 │   ├── services/
 │   │   └── googleSheetsService.js  # Google Sheets operations
 │   ├── .env                        # Environment config
+│   ├── Dockerfile                  # Backend Docker image
 │   └── package.json
-├── client/
+├── client/                         # Frontend (frontend service)
 │   ├── public/
 │   │   └── index.html
 │   ├── src/
@@ -236,7 +242,10 @@ FormApp/
 │   │   ├── index.js
 │   │   └── services/
 │   │       └── api.js              # API service
+│   ├── nginx.conf                  # Production Nginx config
+│   ├── Dockerfile                  # Frontend Docker image
 │   └── package.json
+├── docker-compose.yml              # Docker orchestration
 └── README.md
 ```
 
