@@ -478,6 +478,40 @@
   padding-bottom: 0;
 }
 
+/* WhatsApp Copy Button */
+.whatsapp-copy-btn {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);
+}
+
+.whatsapp-copy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.3);
+}
+
+.whatsapp-copy-btn:active {
+  transform: translateY(0);
+}
+
+.whatsapp-copy-btn.copied {
+  background: #0f172a;
+  border: 1px solid #25d366;
+  color: #25d366;
+}
+
 /* Admin Footer */
 .admin-footer {
   padding: 16px;

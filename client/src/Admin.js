@@ -18,6 +18,7 @@ function Admin() {
   // Filter and view state
   const [zoneFilter, setZoneFilter] = useState('');
   const [activeTab, setActiveTab] = useState('responses'); // 'responses' or 'missing'
+  const [copied, setCopied] = useState(false);
 
   // Check if already logged in (from session storage)
   useEffect(() => {
@@ -98,6 +99,27 @@ function Admin() {
     setResponses([]);
     setStats(null);
     setMissingUnits(null);
+  }
+
+  function copyWhatsAppMessage() {
+    if (!missingUnits || missingUnits.totalMissing === 0) return;
+    
+    let message = "*QHLS Form പൂരിപ്പിക്കാത്ത ശാഖകൾ:*\n\n";
+    
+    Object.entries(missingUnits.byZone).forEach(([zone, units]) => {
+      message += `*${zone}:*\n`;
+      units.forEach(unit => {
+        message += `- ${unit}\n`;
+      });
+      message += "\n";
+    });
+    
+    navigator.clipboard.writeText(message).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
   }
 
   // Get unique zones for filter
@@ -216,26 +238,37 @@ function Admin() {
         </button>
       </div>
 
+      {/* Filter and Actions Bar */}
+      <div className="actions-bar">
+        <select 
+          className="zone-filter"
+          value={zoneFilter}
+          onChange={(e) => setZoneFilter(e.target.value)}
+        >
+          <option value="">എല്ലാ മണ്ഡലങ്ങളും</option>
+          {uniqueZones.map(zone => (
+            <option key={zone} value={zone}>{zone}</option>
+          ))}
+        </select>
+
+        {activeTab === 'missing' && missingUnits && missingUnits.totalMissing > 0 && (
+          <button 
+            className={`whatsapp-copy-btn ${copied ? 'copied' : ''}`}
+            onClick={copyWhatsAppMessage}
+            style={{ margin: 0, padding: '10px 12px', fontSize: '0.8rem' }}
+          >
+            {copied ? '✓' : 'WA'}
+          </button>
+        )}
+
+        <button onClick={fetchData} className="refresh-btn" disabled={loading}>
+          {loading ? '...' : 'Refresh'}
+        </button>
+      </div>
+
       {/* Responses Tab */}
       {activeTab === 'responses' && (
         <>
-          {/* Filter and Refresh Bar */}
-          <div className="actions-bar">
-            <select 
-              className="zone-filter"
-              value={zoneFilter}
-              onChange={(e) => setZoneFilter(e.target.value)}
-            >
-              <option value="">എല്ലാ മണ്ഡലങ്ങളും</option>
-              {uniqueZones.map(zone => (
-                <option key={zone} value={zone}>{zone}</option>
-              ))}
-            </select>
-            <button onClick={fetchData} className="refresh-btn" disabled={loading}>
-              {loading ? '...' : 'Refresh'}
-            </button>
-          </div>
-
           {/* Mobile Cards View */}
           <div className="cards-container">
             {filteredResponses.length === 0 ? (

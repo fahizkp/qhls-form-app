@@ -323,9 +323,11 @@ function App() {
               <button className="popup-close-btn" style={{ background: '#334155', flex: 1 }} onClick={closePopup}>
                 ശരി
               </button>
-              <button className="popup-close-btn" style={{ flex: 1.5 }} onClick={handleAddAnother}>
-                മറ്റൊരു QHLS കൂടി ഉണ്ട്
-              </button>
+              {popupData.status === 'yes' && (
+                <button className="popup-close-btn" style={{ flex: 1.5 }} onClick={handleAddAnother}>
+                  മറ്റൊരു QHLS കൂടി ഉണ്ട്
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -383,13 +385,15 @@ function App() {
                   അപ്ഡേറ്റ് ചെയ്യണം
                 </button>
               </div>
-              <button 
-                className="popup-close-btn" 
-                style={{ background: '#0d9488' }} 
-                onClick={handleAddNew}
-              >
-                പുതിയ QHLS ചേർക്കുക
-              </button>
+              {existingData && existingData.status === 'QHLS ഉണ്ട്' && (
+                <button 
+                  className="popup-close-btn" 
+                  style={{ background: '#0d9488' }} 
+                  onClick={handleAddNew}
+                >
+                  പുതിയ QHLS ചേർക്കുക
+                </button>
+              )}
             </div>
           </div>
         </div>
