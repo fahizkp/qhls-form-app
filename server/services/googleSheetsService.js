@@ -277,6 +277,145 @@ async function getTopParticipants(limit = 50) {
   }
 }
 
+/**
+ * Get comprehensive report for the new Report Page
+ */
+async function getComprehensiveReport() {
+  try {
+    const allZonesUnits = getAllZonesUnits();
+    const responses = await getAllResponses();
+    
+    const unitsByZone = {};
+    allZonesUnits.forEach(item => {
+      if (!unitsByZone[item.zone]) unitsByZone[item.zone] = { total: 0, units: [] };
+      unitsByZone[item.zone].total += 1;
+      unitsByZone[item.zone].units.push(item.unit);
+    });
+
+    const responsesMap = {};
+    responses.forEach(r => {
+      responsesMap[`${r.zone}|${r.unit}`] = r;
+    });
+
+    const zoneStats = {};
+    Object.keys(unitsByZone).forEach(zone => {
+      zoneStats[zone] = {
+        totalUnits: unitsByZone[zone].total,
+        qhlsCount: 0,
+        noQhlsCount: 0,
+        afterRamadanCount: 0
+      };
+    });
+
+    let syllabusStats = {
+      hajj: 0,
+      muminun: 0,
+      others: 0,
+      totalQhls: 0
+    };
+
+    let syllabusLists = {
+      hajj: [],
+      muminun: [],
+      others: []
+    };
+
+    let afterRamadanStoppedUnits = [];
+
+    allZonesUnits.forEach(item => {
+      const { zone, unit } = item;
+      const response = responsesMap[`${zone}|${unit}`];
+      
+      let hasQhls = false;
+      if (response && response.status === 'QHLS ഉണ്ട്') {
+        hasQhls = true;
+      }
+
+      if (hasQhls) {
+        zoneStats[zone].qhlsCount += 1;
+        syllabusStats.totalQhls += 1;
+        
+        if (response.afterRamadhan === 'yes') {
+          zoneStats[zone].afterRamadanCount += 1;
+        } else if (response.afterRamadhan === 'no') {
+          afterRamadanStoppedUnits.push({
+            unit: unit,
+            zone: zone
+          });
+        }
+
+        const unitDetails = {
+          zone: zone,
+          unit: unit,
+          syllabus: response.syllabus || '',
+          faculty: response.faculty || '',
+          afterRamadan: response.afterRamadan || ''
+        };
+
+        const syllabusText = (response.syllabus || '').toLowerCase();
+        if (syllabusText.includes('hajj') || syllabusText.includes('ഹജ്ജ്') || syllabusText.includes('hujj')) {
+          syllabusStats.hajj += 1;
+          syllabusLists.hajj.push(unitDetails);
+        } else if (
+          syllabusText.includes('muminun') || 
+          syllabusText.includes('muhminun') || 
+          syllabusText.includes('മുഅ്മിനൂൻ') || 
+          syllabusText.includes('mumin') ||
+          syllabusText.includes('mu\'minun') ||
+          syllabusText.includes('muhminoon') ||
+          syllabusText.includes('മുഹ്മിനൂൺ') ||
+          syllabusText.includes('മുഹുമീനൂൻ') ||
+          syllabusText.includes('muhminoon')
+        ) {
+          syllabusStats.muminun += 1;
+          syllabusLists.muminun.push(unitDetails);
+        } else {
+          syllabusStats.others += 1;
+          syllabusLists.others.push(unitDetails);
+        }
+      } else {
+        zoneStats[zone].noQhlsCount += 1;
+      }
+    });
+
+    const zonesByMissingCount = {};
+    Object.keys(zoneStats).forEach(zone => {
+      const missing = zoneStats[zone].noQhlsCount;
+      if (!zonesByMissingCount[missing]) {
+        zonesByMissingCount[missing] = [];
+      }
+      zonesByMissingCount[missing].push({
+        zoneName: zone,
+        totalUnits: zoneStats[zone].totalUnits,
+        qhlsCount: zoneStats[zone].qhlsCount,
+        afterRamadanCount: zoneStats[zone].afterRamadanCount
+      });
+    });
+
+    let zonesWith100PercentAfterRamadan = 0;
+    Object.keys(zoneStats).forEach(zone => {
+      const z = zoneStats[zone];
+      if (z.qhlsCount > 0 && z.afterRamadanCount === z.qhlsCount) {
+        zonesWith100PercentAfterRamadan += 1;
+      }
+    });
+
+    return {
+      zonesByMissingCount,
+      syllabusStats,
+      syllabusLists,
+      zoneStats,
+      afterRamadanStoppedUnits,
+      zonesWith100PercentAfterRamadan,
+      totalUnits: allZonesUnits.length
+    };
+
+  } catch (error) {
+    console.error('Error getting comprehensive report:', error.message);
+    throw error;
+  }
+}
+
 module.exports = {
   getZones,
   getUnits,
@@ -285,4 +424,5 @@ module.exports = {
   getTopParticipants,
   getAllResponses,
   getExistingSubmission,
+  getComprehensiveReport,
 };

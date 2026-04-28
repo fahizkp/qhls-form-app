@@ -146,6 +146,23 @@ router.post('/submit', async (req, res) => {
 });
 
 /**
+ * GET /api/report/comprehensive
+ * Returns comprehensive report data
+ */
+router.get('/report/comprehensive', async (req, res) => {
+  try {
+    const report = await sheetsService.getComprehensiveReport();
+    res.json({ success: true, report });
+  } catch (error) {
+    console.error('GET /report/comprehensive error:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to generate comprehensive report' 
+    });
+  }
+});
+
+/**
  * GET /api/report/missing-units
  * Returns units that have NOT conducted QHLS (no submission)
  */

@@ -12,6 +12,7 @@ function Admin() {
   const [responses, setResponses] = useState([]);
   const [stats, setStats] = useState(null);
   const [missingUnits, setMissingUnits] = useState(null);
+  const [comprehensiveReport, setComprehensiveReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -67,15 +68,17 @@ function Admin() {
     setError('');
 
     try {
-      const [responsesRes, statsRes, missingRes] = await Promise.all([
+      const [responsesRes, statsRes, missingRes, compRes] = await Promise.all([
         fetch(`${API_BASE}/admin/responses`),
         fetch(`${API_BASE}/admin/stats`),
         fetch(`${API_BASE}/admin/missing-units`),
+        fetch(`${API_BASE}/admin/report/comprehensive`),
       ]);
 
       const responsesData = await responsesRes.json();
       const statsData = await statsRes.json();
       const missingData = await missingRes.json();
+      const compData = await compRes.json();
 
       if (responsesData.success) {
         setResponses(responsesData.responses);
@@ -85,6 +88,9 @@ function Admin() {
       }
       if (missingData.success) {
         setMissingUnits(missingData.report);
+      }
+      if (compData.success) {
+        setComprehensiveReport(compData.report);
       }
     } catch (err) {
       setError('Failed to load data. Please refresh.');
@@ -99,6 +105,7 @@ function Admin() {
     setResponses([]);
     setStats(null);
     setMissingUnits(null);
+    setComprehensiveReport(null);
   }
 
   function copyWhatsAppMessage() {
@@ -236,6 +243,12 @@ function Admin() {
         >
           ബാക്കിയുള്ളവ ({missingUnits?.totalMissing || 0})
         </button>
+        <button 
+          className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`}
+          onClick={() => setActiveTab('report')}
+        >
+          റിപ്പോർട്ട്
+        </button>
       </div>
 
       {/* Filter and Actions Bar */}
@@ -350,6 +363,81 @@ function Admin() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* Report Tab */}
+      {activeTab === 'report' && comprehensiveReport && (
+        <div className="report-container">
+          {/* Missing QHLS Zones Grouped */}
+          <div className="report-section">
+            <h2 className="report-title">മണ്ഡലങ്ങൾ (QHLS ഇല്ലാത്ത ശാഖകളുടെ അടിസ്ഥാനത്തിൽ)</h2>
+            {Object.keys(comprehensiveReport.zonesByMissingCount)
+              .sort((a, b) => parseInt(a) - parseInt(b))
+              .map(missingCount => {
+                const count = parseInt(missingCount);
+                const title = count === 0 
+                  ? "100% QHLS (എല്ലാ ശാഖകളിലും ഉണ്ട്)" 
+                  : count === 1 
+                    ? "ഒരു ശാഖയിൽ മാത്രം QHLS ഇല്ലാത്തവ" 
+                    : count === 2 
+                      ? "രണ്ട് ശാഖകളിൽ QHLS ഇല്ലാത്തവ" 
+                      : `${count} ശാഖകളിൽ QHLS ഇല്ലാത്തവ`;
+                
+                return (
+                  <div key={missingCount} className="report-group">
+                    <h3 className="report-group-title">{title}</h3>
+                    <div className="report-group-list">
+                      {comprehensiveReport.zonesByMissingCount[missingCount].map((z, idx) => (
+                        <div key={idx} className="report-zone-item">
+                          <span className="zone-name">{z.zoneName}</span>
+                          <span className="zone-detail">({z.qhlsCount}/{z.totalUnits})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Syllabus Stats */}
+          <div className="report-section">
+            <h2 className="report-title">സിലബസ് അടിസ്ഥാനത്തിൽ</h2>
+            <div className="syllabus-stats-grid">
+              <div className="stat-card">
+                <div className="stat-value">{comprehensiveReport.syllabusStats.hajj}</div>
+                <div className="stat-label">സൂറത്ത് ഹജ്ജ് ({comprehensiveReport.syllabusStats.totalQhls}-ൽ)</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{comprehensiveReport.syllabusStats.muminun}</div>
+                <div className="stat-label">സൂറത്ത് മുഅ്മിനൂൻ ({comprehensiveReport.syllabusStats.totalQhls}-ൽ)</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{comprehensiveReport.syllabusStats.others}</div>
+                <div className="stat-label">മറ്റ് സിലബസുകൾ ({comprehensiveReport.syllabusStats.totalQhls}-ൽ)</div>
+              </div>
+            </div>
+          </div>
+
+          {/* After Ramadan Stats */}
+          <div className="report-section">
+            <h2 className="report-title">റമദാനിന് ശേഷവും QHLS ഉള്ള ശാഖകൾ</h2>
+            <div className="after-ramadan-list">
+              {Object.keys(comprehensiveReport.zoneStats).map(zone => {
+                const z = comprehensiveReport.zoneStats[zone];
+                // Only show if there's at least one unit having QHLS
+                if (z.qhlsCount === 0) return null;
+                return (
+                  <div key={zone} className="after-ramadan-item">
+                    <span className="zone-name">{zone}</span>
+                    <span className="zone-detail">
+                      ({z.afterRamadanCount} ശാഖകൾ / ആകെ {z.qhlsCount} QHLS)
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>
