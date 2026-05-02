@@ -137,11 +137,69 @@ router.post('/submit', async (req, res) => {
       totalParticipants: result.totalParticipants,
     });
   } catch (error) {
-    console.error('POST /submit error:', error.message);
     res.status(500).json({ 
       success: false, 
       error: 'Failed to submit response' 
     });
+  }
+});
+
+/**
+ * POST /api/vision-meet
+ * Saves vision meet date into QHLS_Responses sheet
+ */
+router.post('/vision-meet', async (req, res) => {
+  try {
+    const { zoneName, unitName, visionMeetDate, isUpdate } = req.body;
+
+    if (!zoneName || !unitName || !visionMeetDate) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Zone, Unit and Date are required' 
+      });
+    }
+
+    const result = await sheetsService.submitVisionMeet({
+      zoneName,
+      unitName,
+      visionMeetDate
+    }, isUpdate);
+    
+    res.json({ 
+      success: true, 
+      message: 'Vision Meet submitted successfully'
+    });
+  } catch (error) {
+    console.error('POST /vision-meet error:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to submit vision meet' 
+    });
+  }
+});
+
+/**
+ * GET /api/vision-meet/check?zone=X&unit=Y
+ * Checks if a unit has already saved vision meet date
+ */
+router.get('/vision-meet/check', async (req, res) => {
+  try {
+    const { zone, unit } = req.query;
+    if (!zone || !unit) {
+      return res.status(400).json({ success: false, error: 'Zone and Unit are required' });
+    }
+
+    const submission = await sheetsService.getExistingSubmission(zone, unit);
+    const visionMeetDate = submission ? submission.visionMeetDate : '';
+    
+    res.json({ 
+      success: true, 
+      exists: !!visionMeetDate, 
+      visionMeetDate 
+    });
+  } catch (error) {
+    console.error('GET /vision-meet/check error:', error.message);
+    res.status(500).json({ success: false, error: 'Failed to check vision meet' });
   }
 });
 

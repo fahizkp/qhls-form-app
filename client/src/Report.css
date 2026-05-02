@@ -40,6 +40,8 @@
   font-size: 1.1rem;
 }
 
+
+
 /* ── Header ── */
 .rp-header {
   background: linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%);
@@ -806,4 +808,44 @@
     width: 8px;
     height: 8px;
   }
+}
+
+.vision-meet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.vision-meet-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  border-left: 6px solid #0d9488;
+  transition: transform 0.3s;
+}
+
+.vision-meet-card:hover {
+  transform: translateY(-5px);
+}
+
+.vmc-date {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0d9488;
+  margin-bottom: 8px;
+}
+
+.vmc-unit {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.vmc-zone {
+  font-size: 0.9rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }

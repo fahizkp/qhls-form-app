@@ -117,6 +117,7 @@ async function submitResponse(data, isUpdate = false, forceAppend = false) {
       qhlsStatus === 'yes' ? afterRamadhan : '',
       qhlsStatus === 'yes' ? (parseInt(gentsCount) || 0) : '',
       qhlsStatus === 'yes' ? (parseInt(ladiesCount) || 0) : '',
+      data.visionMeetDate || '',
     ];
 
     // Check if row already exists for this zone+unit
@@ -131,7 +132,7 @@ async function submitResponse(data, isUpdate = false, forceAppend = false) {
       // Update existing row
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${RESPONSES_SHEET}!A${existingRowNum}:K${existingRowNum}`,
+        range: `${RESPONSES_SHEET}!A${existingRowNum}:L${existingRowNum}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [rowData],
@@ -141,7 +142,7 @@ async function submitResponse(data, isUpdate = false, forceAppend = false) {
       // Append new row
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${RESPONSES_SHEET}!A:K`,
+        range: `${RESPONSES_SHEET}!A:L`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [rowData],
@@ -186,7 +187,7 @@ async function getAllResponses() {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${RESPONSES_SHEET}!A:K`,
+      range: `${RESPONSES_SHEET}!A:L`,
     });
 
     const rows = response.data.values || [];
@@ -206,6 +207,7 @@ async function getAllResponses() {
       afterRamadhan: row[8] || '',
       gents: parseInt(row[9]) || 0,
       ladies: parseInt(row[10]) || 0,
+      visionMeetDate: row[11] || '',
     }));
 
     return mappedRows;
@@ -321,6 +323,7 @@ async function getComprehensiveReport() {
     };
 
     let afterRamadanStoppedUnits = [];
+    let visionMeetUnits = [];
 
     allZonesUnits.forEach(item => {
       const { zone, unit } = item;
@@ -349,7 +352,8 @@ async function getComprehensiveReport() {
           unit: unit,
           syllabus: response.syllabus || '',
           faculty: response.faculty || '',
-          afterRamadan: response.afterRamadan || ''
+          afterRamadan: response.afterRamadhan || '',
+          visionMeetDate: response.visionMeetDate || ''
         };
 
         const syllabusText = (response.syllabus || '').toLowerCase();
@@ -375,6 +379,14 @@ async function getComprehensiveReport() {
         }
       } else {
         zoneStats[zone].noQhlsCount += 1;
+      }
+
+      if (response && response.visionMeetDate) {
+        visionMeetUnits.push({
+          zone: zone,
+          unit: unit,
+          visionMeetDate: response.visionMeetDate
+        });
       }
     });
 
@@ -406,12 +418,60 @@ async function getComprehensiveReport() {
       syllabusLists,
       zoneStats,
       afterRamadanStoppedUnits,
+      visionMeetUnits,
       zonesWith100PercentAfterRamadan,
       totalUnits: allZonesUnits.length
     };
 
   } catch (error) {
     console.error('Error getting comprehensive report:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * Submit only Vision Meet Date
+ */
+async function submitVisionMeet(data, isUpdate = false) {
+  try {
+    const { zoneName, unitName, visionMeetDate } = data;
+    
+    // Check if row already exists for this zone+unit
+    const existingRowNum = await findExistingRow(zoneName, unitName);
+
+    if (existingRowNum > 0) {
+      // Update existing row - Column L is the 12th column
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${RESPONSES_SHEET}!L${existingRowNum}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[visionMeetDate]],
+        },
+      });
+    } else {
+      // Append new row with only Zone, Unit and Vision Meet Date
+      const rowData = [
+        zoneName,
+        unitName,
+        'QHLS ഇല്ല', // Default status if not yet submitted
+        '', '', '', '', '', '', '', '', // Empty columns C to K
+        visionMeetDate
+      ];
+      
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${RESPONSES_SHEET}!A:L`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [rowData],
+        },
+      });
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error submitting vision meet:', error.message);
     throw error;
   }
 }
@@ -425,4 +485,5 @@ module.exports = {
   getAllResponses,
   getExistingSubmission,
   getComprehensiveReport,
+  submitVisionMeet,
 };

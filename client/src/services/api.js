@@ -91,3 +91,38 @@ export async function fetchTopParticipants(limit = 50) {
   return data.report;
 }
 
+/**
+ * Submit Vision Meet data
+ */
+export async function submitVisionMeet(formData) {
+  const response = await fetch(`${API_BASE}/api/vision-meet`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(formData),
+  });
+  
+  const data = await response.json();
+  
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to submit vision meet');
+  }
+  
+  return data;
+}
+
+/**
+ * Check if a unit has already saved vision meet date
+ */
+export async function checkVisionMeet(zone, unit) {
+  const response = await fetch(`${API_BASE}/api/vision-meet/check?zone=${encodeURIComponent(zone)}&unit=${encodeURIComponent(unit)}`);
+  const data = await response.json();
+  
+  if (!data.success) {
+    throw new Error(data.error || 'Failed to check vision meet');
+  }
+  
+  return data;
+}
+

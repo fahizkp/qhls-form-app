@@ -72,7 +72,8 @@ function Report() {
     { id: 'zones', title: 'Zone Groups' },
     { id: 'syllabus', title: 'Syllabus' },
     { id: 'after-ramadan', title: 'After Ramadan' },
-    { id: 'stopped', title: 'Stopped Units' }
+    { id: 'stopped', title: 'Stopped Units' },
+    { id: 'vision-meet', title: 'Vision Meet' }
   ];
 
   const nextSlide = () => {
@@ -363,6 +364,32 @@ function Report() {
                   <div className="sus-empty">എല്ലാ ശാഖകളും റമദാനിന് ശേഷം തുടരുന്നു! 🎉</div>
                 )}
               </div>
+            </section>
+          </div>
+        )}
+
+        {/* ── SLIDE 5: VISION MEET ── */}
+        {currentSlide === 5 && (
+          <div className="slide active">
+            <section className="rp-section">
+              <div className="rp-section-title">
+                <span className="rp-section-num">5</span>
+                <h2>Vision Meet - നിശ്ചയിക്കപ്പെട്ട ശാഖകൾ</h2>
+              </div>
+
+              {data.visionMeetUnits && data.visionMeetUnits.length > 0 ? (
+                <div className="vision-meet-grid">
+                  {data.visionMeetUnits.map((u, idx) => (
+                    <div key={idx} className="vision-meet-card">
+                      <div className="vmc-date">{u.visionMeetDate}</div>
+                      <div className="vmc-unit">{u.unit}</div>
+                      <div className="vmc-zone">{u.zone}</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="sus-empty">വിഷൻ മീറ്റ് തീയതികൾ ലഭ്യമായിട്ടില്ല.</div>
+              )}
             </section>
           </div>
         )}

@@ -312,6 +312,11 @@ function Admin() {
                       <div className="card-details">
                         <span>🌙 റമദാനിന് ശേഷം: {row.afterRamadhan === 'yes' ? 'ഉണ്ട്' : 'ഇല്ല'}</span>
                       </div>
+                      {row.visionMeetDate && (
+                        <div className="card-details vision-meet-highlight">
+                          <span>🎯 Vision Meet: <strong>{row.visionMeetDate}</strong></span>
+                        </div>
+                      )}
                       <div className="card-counts">
                         <div className="count-item">
                           <span className="count-value">{row.gents}</span>
