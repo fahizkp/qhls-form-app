@@ -72,7 +72,7 @@ function Admin() {
         fetch(`${API_BASE}/admin/responses`),
         fetch(`${API_BASE}/admin/stats`),
         fetch(`${API_BASE}/admin/missing-units`),
-        fetch(`${API_BASE}/admin/report/comprehensive`),
+        fetch(`${API_BASE}/api/report/comprehensive`),
       ]);
 
       const responsesData = await responsesRes.json();
