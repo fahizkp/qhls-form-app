@@ -18,6 +18,7 @@ function Admin() {
   
   // Filter and view state
   const [zoneFilter, setZoneFilter] = useState('');
+  const [visionMeetFilter, setVisionMeetFilter] = useState('all'); // 'all', 'filled', 'pending'
   const [activeTab, setActiveTab] = useState('responses'); // 'responses' or 'missing'
   const [copied, setCopied] = useState(false);
 
@@ -132,10 +133,15 @@ function Admin() {
   // Get unique zones for filter
   const uniqueZones = [...new Set(responses.map(r => r.zone))].sort();
   
-  // Filter responses by zone
-  const filteredResponses = zoneFilter 
-    ? responses.filter(r => r.zone === zoneFilter)
-    : responses;
+  // Filter responses by zone and vision meet status
+  const filteredResponses = responses.filter(r => {
+    const matchesZone = !zoneFilter || r.zone === zoneFilter;
+    const matchesVisionMeet = 
+      visionMeetFilter === 'all' || 
+      (visionMeetFilter === 'filled' && r.visionMeetDate) || 
+      (visionMeetFilter === 'pending' && !r.visionMeetDate);
+    return matchesZone && matchesVisionMeet;
+  });
 
   // Login Screen
   if (!isLoggedIn) {
@@ -262,6 +268,16 @@ function Admin() {
           {uniqueZones.map(zone => (
             <option key={zone} value={zone}>{zone}</option>
           ))}
+        </select>
+
+        <select 
+          className="vision-filter"
+          value={visionMeetFilter}
+          onChange={(e) => setVisionMeetFilter(e.target.value)}
+        >
+          <option value="all">എല്ലാ വിഷൻ മീറ്റും</option>
+          <option value="filled">പൂർത്തിയാക്കിയവ</option>
+          <option value="pending">പൂർത്തിയാക്കാത്തവ</option>
         </select>
 
         {activeTab === 'missing' && missingUnits && missingUnits.totalMissing > 0 && (

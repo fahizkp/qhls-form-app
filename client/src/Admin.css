@@ -275,7 +275,7 @@
   padding: 0 16px 12px;
 }
 
-.zone-filter {
+.zone-filter, .vision-filter {
   flex: 1;
   padding: 10px 14px;
   font-size: 0.9rem;
@@ -293,13 +293,13 @@
   padding-right: 36px;
 }
 
-.zone-filter:focus {
+.zone-filter:focus, .vision-filter:focus {
   outline: none;
   border-color: #14b8a6;
   background-color: #ffffff;
 }
 
-.zone-filter option {
+.zone-filter option, .vision-filter option {
   background-color: #ffffff;
   color: #1e293b;
 }
