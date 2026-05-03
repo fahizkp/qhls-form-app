@@ -594,3 +594,31 @@
   }
 }
 
+
+.vision-summary-bar {
+  padding: 0 16px 12px;
+}
+
+.vision-summary-content {
+  display: flex;
+  gap: 10px;
+  background: rgba(20, 184, 166, 0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(20, 184, 166, 0.2);
+}
+
+.vision-summary-item {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.vision-summary-item strong {
+  color: #14b8a6;
+}
+
+.vision-summary-item.pending {
+  border-left: 1px solid rgba(20, 184, 166, 0.2);
+  padding-left: 10px;
+}
+

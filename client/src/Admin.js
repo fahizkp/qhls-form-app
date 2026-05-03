@@ -143,6 +143,10 @@ function Admin() {
     return matchesZone && matchesVisionMeet;
   });
 
+  // Vision Meet counts for the summary display
+  const visionMeetFilledCount = responses.filter(r => r.visionMeetDate).length;
+  const visionMeetPendingCount = responses.length - visionMeetFilledCount;
+
   // Login Screen
   if (!isLoggedIn) {
     return (
@@ -294,6 +298,20 @@ function Admin() {
           {loading ? '...' : 'Refresh'}
         </button>
       </div>
+
+      {/* Vision Meet Summary Badge */}
+      {activeTab === 'responses' && responses.length > 0 && (
+        <div className="vision-summary-bar">
+          <div className="vision-summary-content">
+            <span className="vision-summary-item filled">
+              🎯 Vision Meet: <strong>{visionMeetFilledCount}</strong>
+            </span>
+            <span className="vision-summary-item pending">
+              പൂർത്തിയാക്കാത്തവ: <strong>{visionMeetPendingCount}</strong>
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Responses Tab */}
       {activeTab === 'responses' && (
