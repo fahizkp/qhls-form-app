@@ -281,11 +281,6 @@ function Admin() {
           ))}
         </select>
 
-          {uniqueZones.map(zone => (
-            <option key={zone} value={zone}>{zone}</option>
-          ))}
-        </select>
-
         {activeTab === 'missing' && missingUnits && missingUnits.totalMissing > 0 && (
           <button 
             className={`whatsapp-copy-btn ${copied ? 'copied' : ''}`}
