@@ -18,8 +18,7 @@ function Admin() {
   
   // Filter and view state
   const [zoneFilter, setZoneFilter] = useState('');
-  const [visionMeetFilter, setVisionMeetFilter] = useState('all'); // 'all', 'filled', 'pending'
-  const [activeTab, setActiveTab] = useState('responses'); // 'responses' or 'missing'
+  const [activeTab, setActiveTab] = useState('qhls'); // 'qhls', 'vision', 'missing', 'report'
   const [copied, setCopied] = useState(false);
 
   // Check if already logged in (from session storage)
@@ -133,19 +132,21 @@ function Admin() {
   // Get unique zones for filter
   const uniqueZones = [...new Set(responses.map(r => r.zone))].sort();
   
-  // Filter responses by zone and vision meet status
-  const filteredResponses = responses.filter(r => {
-    const matchesZone = !zoneFilter || r.zone === zoneFilter;
-    const matchesVisionMeet = 
-      visionMeetFilter === 'all' || 
-      (visionMeetFilter === 'filled' && r.visionMeetDate) || 
-      (visionMeetFilter === 'pending' && !r.visionMeetDate);
-    return matchesZone && matchesVisionMeet;
-  });
+  // Tab-specific data
+  const qhlsResponses = responses.filter(r => r.status === 'QHLS ഉണ്ട്');
+  const visionMeetResponses = responses.filter(r => r.visionMeetDate);
 
-  // Vision Meet counts for the summary display
-  const visionMeetFilledCount = responses.filter(r => r.visionMeetDate).length;
-  const visionMeetPendingCount = responses.length - visionMeetFilledCount;
+  // Filter logic based on active tab and zone filter
+  const getFilteredData = () => {
+    let baseData = [];
+    if (activeTab === 'qhls') baseData = qhlsResponses;
+    else if (activeTab === 'vision') baseData = visionMeetResponses;
+    else return [];
+
+    return zoneFilter ? baseData.filter(r => r.zone === zoneFilter) : baseData;
+  };
+
+  const filteredData = getFilteredData();
 
   // Login Screen
   if (!isLoggedIn) {
@@ -242,10 +243,16 @@ function Admin() {
       {/* Tab Navigation */}
       <div className="tab-nav">
         <button 
-          className={`tab-btn ${activeTab === 'responses' ? 'active' : ''}`}
-          onClick={() => setActiveTab('responses')}
+          className={`tab-btn ${activeTab === 'qhls' ? 'active' : ''}`}
+          onClick={() => setActiveTab('qhls')}
         >
-          റെസ്പോൺസുകൾ ({responses.length})
+          QHLS ({qhlsResponses.length})
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'vision' ? 'active' : ''}`}
+          onClick={() => setActiveTab('vision')}
+        >
+          Vision Meet ({visionMeetResponses.length})
         </button>
         <button 
           className={`tab-btn ${activeTab === 'missing' ? 'active' : ''}`}
@@ -274,14 +281,9 @@ function Admin() {
           ))}
         </select>
 
-        <select 
-          className="vision-filter"
-          value={visionMeetFilter}
-          onChange={(e) => setVisionMeetFilter(e.target.value)}
-        >
-          <option value="all">എല്ലാ വിഷൻ മീറ്റും</option>
-          <option value="filled">പൂർത്തിയാക്കിയവ</option>
-          <option value="pending">പൂർത്തിയാക്കാത്തവ</option>
+          {uniqueZones.map(zone => (
+            <option key={zone} value={zone}>{zone}</option>
+          ))}
         </select>
 
         {activeTab === 'missing' && missingUnits && missingUnits.totalMissing > 0 && (
@@ -299,40 +301,30 @@ function Admin() {
         </button>
       </div>
 
-      {/* Vision Meet Summary Badge */}
-      {activeTab === 'responses' && responses.length > 0 && (
-        <div className="vision-summary-bar">
-          <div className="vision-summary-content">
-            <span className="vision-summary-item filled">
-              🎯 Vision Meet: <strong>{visionMeetFilledCount}</strong>
-            </span>
-            <span className="vision-summary-item pending">
-              പൂർത്തിയാക്കാത്തവ: <strong>{visionMeetPendingCount}</strong>
-            </span>
-          </div>
-        </div>
-      )}
 
-      {/* Responses Tab */}
-      {activeTab === 'responses' && (
+
+      {/* QHLS & Vision Meet Tabs Content */}
+      {(activeTab === 'qhls' || activeTab === 'vision') && (
         <>
-          {/* Mobile Cards View */}
           <div className="cards-container">
-            {filteredResponses.length === 0 ? (
+            {filteredData.length === 0 ? (
               <div className="empty-state">
                 {loading ? 'Loading...' : 'No data available'}
               </div>
             ) : (
-              filteredResponses.map((row, index) => (
+              filteredData.map((row, index) => (
                 <div key={index} className={`response-card ${row.status === 'QHLS ഇല്ല' ? 'no-qhls' : ''}`}>
                   <div className="card-header">
                     <span className="card-zone">{row.zone}</span>
-                    <span className={`status-badge ${row.status === 'QHLS ഉണ്ട്' ? 'status-yes' : 'status-no'}`}>
-                      {row.status === 'QHLS ഉണ്ട്' ? 'ഉണ്ട്' : 'ഇല്ല'}
-                    </span>
+                    {activeTab === 'qhls' && (
+                      <span className={`status-badge ${row.status === 'QHLS ഉണ്ട്' ? 'status-yes' : 'status-no'}`}>
+                        {row.status === 'QHLS ഉണ്ട്' ? 'ഉണ്ട്' : 'ഇല്ല'}
+                      </span>
+                    )}
                   </div>
                   <div className="card-unit">{row.unit}</div>
-                  {row.status === 'QHLS ഉണ്ട്' && (
+                  
+                  {activeTab === 'qhls' && (
                     <>
                       <div className="card-details">
                         <span>📅 {row.day}</span>
@@ -346,11 +338,6 @@ function Admin() {
                       <div className="card-details">
                         <span>🌙 റമദാനിന് ശേഷം: {row.afterRamadhan === 'yes' ? 'ഉണ്ട്' : 'ഇല്ല'}</span>
                       </div>
-                      {row.visionMeetDate && (
-                        <div className="card-details vision-meet-highlight">
-                          <span>🎯 Vision Meet: <strong>{row.visionMeetDate}</strong></span>
-                        </div>
-                      )}
                       <div className="card-counts">
                         <div className="count-item">
                           <span className="count-value">{row.gents}</span>
@@ -367,13 +354,19 @@ function Admin() {
                       </div>
                     </>
                   )}
+
+                  {activeTab === 'vision' && row.visionMeetDate && (
+                    <div className="card-details vision-meet-highlight" style={{ marginTop: '10px' }}>
+                      <span>🎯 Vision Meet: <strong>{row.visionMeetDate}</strong></span>
+                    </div>
+                  )}
                 </div>
               ))
             )}
           </div>
 
           <div className="admin-footer">
-            <p>Showing {filteredResponses.length} of {responses.length} entries</p>
+            <p>Showing {filteredData.length} entries</p>
           </div>
         </>
       )}
