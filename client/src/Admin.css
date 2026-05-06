@@ -622,3 +622,165 @@
   padding-left: 10px;
 }
 
+
+/* Main Track Tabs (QHLS / Vision Meet) */
+.main-track-tabs {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(15, 118, 110, 0.05);
+}
+
+.track-tab {
+  flex: 1;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: #94a3b8;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.track-tab.active {
+  color: #fff;
+  background: linear-gradient(135deg, #0f766e 0%, #0d5d57 100%);
+  border-color: #0f766e;
+  box-shadow: 0 10px 20px -5px rgba(15, 118, 110, 0.3);
+}
+
+/* Sub Tab Navigation (Poorthiyakkivar / Baakiyullava) */
+.sub-tab-nav {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.sub-tab-btn {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sub-tab-btn.active {
+  color: #14b8a6;
+  background: rgba(20, 184, 166, 0.1);
+  border-color: #14b8a6;
+}
+
+/* Contact Actions */
+.contact-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.contact-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: transform 0.2s;
+}
+
+.contact-btn:active {
+  transform: scale(0.9);
+}
+
+.contact-btn.call {
+  background: #3b82f6;
+}
+
+.contact-btn.whatsapp {
+  background: #25d366;
+}
+
+/* Responsive Stats Grid */
+.track-container .stats-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.track-container .stat-card {
+  flex: 1 1 150px;
+}
+
+.vision-card {
+  border-left: 4px solid #14b8a6;
+}
+
+.day-badge {
+  background: #14b8a6;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.vision-highlight-box {
+  background: #0f172a;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.vh-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.vh-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #14b8a6;
+}
+
+.vision-date-mini {
+  color: #14b8a6;
+  font-weight: 600;
+}
+
+
+.mobile-text {
+  color: #fff;
+  font-weight: 600;
+  margin-right: 8px;
+  font-size: 0.9rem;
+}
+
+.vh-day {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #14b8a6;
+  margin-top: 4px;
+}
+
+
+.stat-card.highlight-amber {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  border: none;
+}
+
+.stat-card.highlight-amber .stat-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+

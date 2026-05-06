@@ -18,8 +18,11 @@ function Admin() {
   
   // Filter and view state
   const [zoneFilter, setZoneFilter] = useState('');
-  const [activeTab, setActiveTab] = useState('qhls'); // 'qhls', 'vision', 'missing', 'report'
+  const [mainTab, setMainTab] = useState('qhls'); // 'qhls', 'vision'
+  const [qhlsSubTab, setQhlsSubTab] = useState('completed'); // 'completed', 'missing'
+  const [visionSubTab, setVisionSubTab] = useState('scheduled'); // 'scheduled', 'pending'
   const [copied, setCopied] = useState(false);
+  const [visionCopied, setVisionCopied] = useState(false);
 
   // Check if already logged in (from session storage)
   useEffect(() => {
@@ -129,24 +132,97 @@ function Admin() {
     });
   }
 
+  function copyVisionWhatsAppMessage() {
+    const pendingData = getVisionPendingUnits();
+    if (Object.keys(pendingData).length === 0) return;
+    
+    let message = "*Vision Meet നിശ്ചയിക്കാത്ത ശാഖകൾ:*\n\n";
+    
+    Object.entries(pendingData).forEach(([zone, units]) => {
+      if (!zoneFilter || zone === zoneFilter) {
+        message += `*${zone}:*\n`;
+        units.forEach(unit => {
+          message += `- ${unit}\n`;
+        });
+        message += "\n";
+      }
+    });
+    
+    navigator.clipboard.writeText(message).then(() => {
+      setVisionCopied(true);
+      setTimeout(() => setVisionCopied(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
+  }
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) return dateStr;
+    const [year, month, day] = dateStr.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+    return dateStr;
+  };
+
+  const getDayName = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    const days = ['ഞായർ', 'തിങ്കൾ', 'ചൊവ്വ', 'ബുധൻ', 'വ്യാഴം', 'വെള്ളി', 'ശനി'];
+    return days[date.getDay()];
+  };
+
   // Get unique zones for filter
   const uniqueZones = [...new Set(responses.map(r => r.zone))].sort();
   
-  // Tab-specific data
+  // Data for QHLS Track
   const qhlsResponses = responses.filter(r => r.status === 'QHLS ഉണ്ട്');
+  const filteredQhls = zoneFilter 
+    ? qhlsResponses.filter(r => r.zone === zoneFilter) 
+    : qhlsResponses;
+
+  // Data for Vision Meet Track
   const visionMeetResponses = responses.filter(r => r.visionMeetDate);
+  const filteredVision = zoneFilter 
+    ? visionMeetResponses.filter(r => r.zone === zoneFilter) 
+    : visionMeetResponses;
 
-  // Filter logic based on active tab and zone filter
-  const getFilteredData = () => {
-    let baseData = [];
-    if (activeTab === 'qhls') baseData = qhlsResponses;
-    else if (activeTab === 'vision') baseData = visionMeetResponses;
-    else return [];
+  const sortedVision = [...filteredVision].sort((a, b) => {
+    return new Date(a.visionMeetDate) - new Date(b.visionMeetDate);
+  });
 
-    return zoneFilter ? baseData.filter(r => r.zone === zoneFilter) : baseData;
-  };
+  // Counts
+  const totalUnits = (stats?.uniqueUnits || 0) + (missingUnits?.totalMissing || 0);
+  const visionScheduled = visionMeetResponses.length;
+  const visionPending = totalUnits - visionScheduled;
 
-  const filteredData = getFilteredData();
+  // Units that haven't filled Vision Meet
+  function getVisionPendingUnits() {
+    const pendingByZone = {};
+    
+    // 1. Units that filled QHLS but NOT Vision Meet
+    responses.filter(r => !r.visionMeetDate).forEach(r => {
+      if (!pendingByZone[r.zone]) pendingByZone[r.zone] = [];
+      pendingByZone[r.zone].push(r.unit);
+    });
+    
+    // 2. Units that haven't filled anything at all
+    if (missingUnits) {
+      Object.entries(missingUnits.byZone).forEach(([zone, units]) => {
+        if (!pendingByZone[zone]) pendingByZone[zone] = [];
+        units.forEach(u => {
+          if (!pendingByZone[zone].includes(u)) {
+            pendingByZone[zone].push(u);
+          }
+        });
+      });
+    }
+    
+    return pendingByZone;
+  }
+
+  const visionPendingUnitsByZone = getVisionPendingUnits();
 
   // Login Screen
   if (!isLoggedIn) {
@@ -210,261 +286,244 @@ function Admin() {
 
       {error && <div className="admin-error">{error}</div>}
 
-      {/* Stats Cards */}
-      {stats && (
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-value">{stats.totalResponses}</div>
-            <div className="stat-label">ആകെ റെസ്പോൺസ്</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.totalGents}</div>
-            <div className="stat-label">പുരുഷന്മാർ</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-value">{stats.totalLadies}</div>
-            <div className="stat-label">സ്ത്രീകൾ</div>
-          </div>
-          <div className="stat-card highlight">
-            <div className="stat-value">{stats.totalParticipants}</div>
-            <div className="stat-label">ആകെ പങ്കാളികൾ</div>
-          </div>
-        </div>
-      )}
-
-      {/* Missing Units Summary */}
-      {missingUnits && (
-        <div className="missing-summary">
-          <span className="missing-count">{missingUnits.totalMissing}</span>
-          <span className="missing-text">/{missingUnits.totalUnits} ശാഖകൾ ഫോം പൂരിപ്പിച്ചിട്ടില്ല</span>
-        </div>
-      )}
-
-      {/* Tab Navigation */}
-      <div className="tab-nav">
+      {/* Main Track Tabs */}
+      <div className="main-track-tabs">
         <button 
-          className={`tab-btn ${activeTab === 'qhls' ? 'active' : ''}`}
-          onClick={() => setActiveTab('qhls')}
+          className={`track-tab ${mainTab === 'qhls' ? 'active' : ''}`}
+          onClick={() => setMainTab('qhls')}
         >
-          QHLS ({qhlsResponses.length})
+          QHLS
         </button>
         <button 
-          className={`tab-btn ${activeTab === 'vision' ? 'active' : ''}`}
-          onClick={() => setActiveTab('vision')}
+          className={`track-tab ${mainTab === 'vision' ? 'active' : ''}`}
+          onClick={() => setMainTab('vision')}
         >
-          Vision Meet ({visionMeetResponses.length})
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'missing' ? 'active' : ''}`}
-          onClick={() => setActiveTab('missing')}
-        >
-          ബാക്കിയുള്ളവ ({missingUnits?.totalMissing || 0})
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'report' ? 'active' : ''}`}
-          onClick={() => setActiveTab('report')}
-        >
-          റിപ്പോർട്ട്
+          Vision Meet
         </button>
       </div>
 
-      {/* Filter and Actions Bar */}
-      <div className="actions-bar">
-        <select 
-          className="zone-filter"
-          value={zoneFilter}
-          onChange={(e) => setZoneFilter(e.target.value)}
-        >
-          <option value="">എല്ലാ മണ്ഡലങ്ങളും</option>
-          {uniqueZones.map(zone => (
-            <option key={zone} value={zone}>{zone}</option>
-          ))}
-        </select>
-
-        {activeTab === 'missing' && missingUnits && missingUnits.totalMissing > 0 && (
-          <button 
-            className={`whatsapp-copy-btn ${copied ? 'copied' : ''}`}
-            onClick={copyWhatsAppMessage}
-            style={{ margin: 0, padding: '10px 12px', fontSize: '0.8rem' }}
-          >
-            {copied ? '✓' : 'WA'}
-          </button>
-        )}
-
-        <button onClick={fetchData} className="refresh-btn" disabled={loading}>
-          {loading ? '...' : 'Refresh'}
-        </button>
-      </div>
-
-
-
-      {/* QHLS & Vision Meet Tabs Content */}
-      {(activeTab === 'qhls' || activeTab === 'vision') && (
-        <>
-          <div className="cards-container">
-            {filteredData.length === 0 ? (
-              <div className="empty-state">
-                {loading ? 'Loading...' : 'No data available'}
+      {/* QHLS TRACK CONTENT */}
+      {mainTab === 'qhls' && (
+        <div className="track-container">
+          {/* Stats Cards */}
+          {stats && (
+            <div className="stats-grid">
+              <div className="stat-card">
+                <div className="stat-value">{stats.totalResponses}</div>
+                <div className="stat-label">ആകെ റെസ്പോൺസ്</div>
               </div>
-            ) : (
-              filteredData.map((row, index) => (
-                <div key={index} className={`response-card ${row.status === 'QHLS ഇല്ല' ? 'no-qhls' : ''}`}>
+              <div className="stat-card">
+                <div className="stat-value">{stats.totalGents}</div>
+                <div className="stat-label">പുരുഷന്മാർ</div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-value">{stats.totalLadies}</div>
+                <div className="stat-label">സ്ത്രീകൾ</div>
+              </div>
+              <div className="stat-card highlight">
+                <div className="stat-value">{stats.totalParticipants}</div>
+                <div className="stat-label">ആകെ പങ്കാളികൾ</div>
+              </div>
+            </div>
+          )}
+
+          {/* Missing Summary */}
+          {missingUnits && (
+            <div className="missing-summary">
+              <span className="missing-count">{missingUnits.totalMissing}</span>
+              <span className="missing-text">/{totalUnits} ശാഖകൾ ഫോം പൂരിപ്പിച്ചിട്ടില്ല</span>
+            </div>
+          )}
+
+          {/* Sub-Tabs for QHLS */}
+          <div className="sub-tab-nav">
+            <button 
+              className={`sub-tab-btn ${qhlsSubTab === 'completed' ? 'active' : ''}`}
+              onClick={() => setQhlsSubTab('completed')}
+            >
+              പൂർത്തിയാക്കിയവർ ({qhlsResponses.length})
+            </button>
+            <button 
+              className={`sub-tab-btn ${qhlsSubTab === 'missing' ? 'active' : ''}`}
+              onClick={() => setQhlsSubTab('missing')}
+            >
+              ബാക്കിയുള്ളവ ({missingUnits?.totalMissing || 0})
+            </button>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="actions-bar">
+            <select 
+              className="zone-filter"
+              value={zoneFilter}
+              onChange={(e) => setZoneFilter(e.target.value)}
+            >
+              <option value="">എല്ലാ മണ്ഡലങ്ങളും</option>
+              {uniqueZones.map(zone => (
+                <option key={zone} value={zone}>{zone}</option>
+              ))}
+            </select>
+            <button onClick={fetchData} className="refresh-btn" disabled={loading}>
+              {loading ? '...' : 'Refresh'}
+            </button>
+          </div>
+
+          {/* QHLS Cards */}
+          {qhlsSubTab === 'completed' ? (
+            <div className="cards-container">
+              {filteredQhls.map((row, index) => (
+                <div key={index} className="response-card">
                   <div className="card-header">
                     <span className="card-zone">{row.zone}</span>
-                    {activeTab === 'qhls' && (
-                      <span className={`status-badge ${row.status === 'QHLS ഉണ്ട്' ? 'status-yes' : 'status-no'}`}>
-                        {row.status === 'QHLS ഉണ്ട്' ? 'ഉണ്ട്' : 'ഇല്ല'}
-                      </span>
-                    )}
+                    <span className="status-badge status-yes">QHLS ഉണ്ട്</span>
                   </div>
                   <div className="card-unit">{row.unit}</div>
-                  
-                  {activeTab === 'qhls' && (
-                    <>
-                      <div className="card-details">
-                        <span>📅 {row.day}</span>
-                        <span>👤 {row.faculty}</span>
-                        <span>📱 {row.facultyMobile}</span>
+                  <div className="card-details">
+                    <span>📅 {row.day}</span>
+                    <span>👤 {row.faculty}</span>
+                    {row.facultyMobile && (
+                      <div className="contact-actions">
+                        <span className="mobile-text">{row.facultyMobile}</span>
+                        <a href={`tel:${row.facultyMobile}`} className="contact-btn call" title="Call">📞</a>
+                        <a href={`https://wa.me/91${row.facultyMobile.replace(/\D/g,'')}`} className="contact-btn whatsapp" target="_blank" rel="noreferrer" title="WhatsApp">
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        </a>
                       </div>
-                      <div className="card-details">
-                        <span>📚 {row.syllabus}</span>
-                        <span>📍 {row.sthalam}</span>
-                      </div>
-                      <div className="card-details">
-                        <span>🌙 റമദാനിന് ശേഷം: {row.afterRamadhan === 'yes' ? 'ഉണ്ട്' : 'ഇല്ല'}</span>
-                      </div>
-                      <div className="card-counts">
-                        <div className="count-item">
-                          <span className="count-value">{row.gents}</span>
-                          <span className="count-label">പുരുഷൻ</span>
-                        </div>
-                        <div className="count-item">
-                          <span className="count-value">{row.ladies}</span>
-                          <span className="count-label">സ്ത്രീ</span>
-                        </div>
-                        <div className="count-item total">
-                          <span className="count-value">{row.gents + row.ladies}</span>
-                          <span className="count-label">ആകെ</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  {activeTab === 'vision' && row.visionMeetDate && (
-                    <div className="card-details vision-meet-highlight" style={{ marginTop: '10px' }}>
-                      <span>🎯 Vision Meet: <strong>{row.visionMeetDate}</strong></span>
+                    )}
+                  </div>
+                  <div className="card-details">
+                    <span>📚 {row.syllabus}</span>
+                    <span>📍 {row.sthalam}</span>
+                  </div>
+                  <div className="card-details">
+                    <span>🌙 റമദാനിന് ശേഷം: {row.afterRamadhan === 'yes' ? 'ഉണ്ട്' : 'ഇല്ല'}</span>
+                    {row.visionMeetDate && (
+                      <span className="vision-date-mini">🎯 {formatDate(row.visionMeetDate)}</span>
+                    )}
+                  </div>
+                  <div className="card-counts">
+                    <div className="count-item">
+                      <span className="count-value">{row.gents}</span>
+                      <span className="count-label">പുരുഷൻ</span>
                     </div>
-                  )}
+                    <div className="count-item">
+                      <span className="count-value">{row.ladies}</span>
+                      <span className="count-label">സ്ത്രീ</span>
+                    </div>
+                    <div className="count-item total">
+                      <span className="count-value">{row.gents + row.ladies}</span>
+                      <span className="count-label">ആകെ</span>
+                    </div>
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
-
-          <div className="admin-footer">
-            <p>Showing {filteredData.length} entries</p>
-          </div>
-        </>
-      )}
-
-      {/* Missing Units Tab */}
-      {activeTab === 'missing' && missingUnits && (
-        <div className="missing-container">
-          {Object.keys(missingUnits.byZone).length === 0 ? (
-            <div className="empty-state success">
-              🎉 എല്ലാ ശാഖകളും ഫോം പൂരിപ്പിച്ചു!
+              ))}
             </div>
           ) : (
-            Object.entries(missingUnits.byZone).map(([zone, units]) => (
-              <div key={zone} className="missing-zone-card">
-                <div className="missing-zone-header">
-                  <span className="missing-zone-name">{zone}</span>
-                  <span className="missing-zone-count">{units.length} ശാഖകൾ</span>
+            /* Missing Units Cards in QHLS Track */
+            <div className="missing-container">
+              {missingUnits && Object.entries(missingUnits.byZone)
+                .filter(([zone]) => !zoneFilter || zone === zoneFilter)
+                .map(([zone, units]) => (
+                <div key={zone} className="missing-zone-card">
+                  <div className="missing-zone-header">
+                    <span className="missing-zone-name">{zone}</span>
+                    <span className="missing-zone-count">{units.length} ശാഖകൾ</span>
+                  </div>
+                  <div className="missing-units-list">
+                    {units.map((unit, idx) => (
+                      <div key={idx} className="missing-unit-item">{unit}</div>
+                    ))}
+                  </div>
                 </div>
-                <div className="missing-units-list">
-                  {units.map((unit, idx) => (
-                    <div key={idx} className="missing-unit-item">
-                      {unit}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
       )}
 
-      {/* Report Tab */}
-      {activeTab === 'report' && comprehensiveReport && (
-        <div className="report-container">
-          {/* Missing QHLS Zones Grouped */}
-          <div className="report-section">
-            <h2 className="report-title">മണ്ഡലങ്ങൾ (QHLS ഇല്ലാത്ത ശാഖകളുടെ അടിസ്ഥാനത്തിൽ)</h2>
-            {Object.keys(comprehensiveReport.zonesByMissingCount)
-              .sort((a, b) => parseInt(a) - parseInt(b))
-              .map(missingCount => {
-                const count = parseInt(missingCount);
-                const title = count === 0 
-                  ? "100% QHLS (എല്ലാ ശാഖകളിലും ഉണ്ട്)" 
-                  : count === 1 
-                    ? "ഒരു ശാഖയിൽ മാത്രം QHLS ഇല്ലാത്തവ" 
-                    : count === 2 
-                      ? "രണ്ട് ശാഖകളിൽ QHLS ഇല്ലാത്തവ" 
-                      : `${count} ശാഖകളിൽ QHLS ഇല്ലാത്തവ`;
-                
-                return (
-                  <div key={missingCount} className="report-group">
-                    <h3 className="report-group-title">{title}</h3>
-                    <div className="report-group-list">
-                      {comprehensiveReport.zonesByMissingCount[missingCount].map((z, idx) => (
-                        <div key={idx} className="report-zone-item">
-                          <span className="zone-name">{z.zoneName}</span>
-                          <span className="zone-detail">({z.qhlsCount}/{z.totalUnits})</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-
-          {/* Syllabus Stats */}
-          <div className="report-section">
-            <h2 className="report-title">സിലബസ് അടിസ്ഥാനത്തിൽ</h2>
-            <div className="syllabus-stats-grid">
-              <div className="stat-card">
-                <div className="stat-value">{comprehensiveReport.syllabusStats.hajj}</div>
-                <div className="stat-label">സൂറത്ത് ഹജ്ജ് ({comprehensiveReport.syllabusStats.totalQhls}-ൽ)</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">{comprehensiveReport.syllabusStats.muminun}</div>
-                <div className="stat-label">സൂറത്ത് മുഅ്മിനൂൻ ({comprehensiveReport.syllabusStats.totalQhls}-ൽ)</div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-value">{comprehensiveReport.syllabusStats.others}</div>
-                <div className="stat-label">മറ്റ് സിലബസുകൾ ({comprehensiveReport.syllabusStats.totalQhls}-ൽ)</div>
-              </div>
+      {/* VISION MEET TRACK CONTENT */}
+      {mainTab === 'vision' && (
+        <div className="track-container">
+          <div className="stats-grid">
+            <div 
+              className={`stat-card ${visionSubTab === 'scheduled' ? 'highlight' : ''}`}
+              onClick={() => setVisionSubTab('scheduled')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="stat-value">{visionScheduled}</div>
+              <div className="stat-label">തീരുമാനിച്ചത്</div>
+            </div>
+            <div 
+              className={`stat-card ${visionSubTab === 'pending' ? 'highlight-amber' : ''}`}
+              onClick={() => setVisionSubTab('pending')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="stat-value">{visionPending}</div>
+              <div className="stat-label">തീരുമാനിക്കാത്തത്</div>
             </div>
           </div>
 
-          {/* After Ramadan Stats */}
-          <div className="report-section">
-            <h2 className="report-title">റമദാനിന് ശേഷവും QHLS ഉള്ള ശാഖകൾ</h2>
-            <div className="after-ramadan-list">
-              {Object.keys(comprehensiveReport.zoneStats).map(zone => {
-                const z = comprehensiveReport.zoneStats[zone];
-                // Only show if there's at least one unit having QHLS
-                if (z.qhlsCount === 0) return null;
-                return (
-                  <div key={zone} className="after-ramadan-item">
-                    <span className="zone-name">{zone}</span>
-                    <span className="zone-detail">
-                      ({z.afterRamadanCount} ശാഖകൾ / ആകെ {z.qhlsCount} QHLS)
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="actions-bar">
+            <select 
+              className="zone-filter"
+              value={zoneFilter}
+              onChange={(e) => setZoneFilter(e.target.value)}
+            >
+              <option value="">എല്ലാ മണ്ഡലങ്ങളും</option>
+              {uniqueZones.map(zone => (
+                <option key={zone} value={zone}>{zone}</option>
+              ))}
+            </select>
+            
+            {visionSubTab === 'pending' && visionPending > 0 && (
+              <button 
+                className={`whatsapp-copy-btn ${visionCopied ? 'copied' : ''}`}
+                onClick={copyVisionWhatsAppMessage}
+                style={{ margin: 0, padding: '10px 12px', fontSize: '0.8rem' }}
+              >
+                {visionCopied ? '✓' : 'WA Report'}
+              </button>
+            )}
+
+            <button onClick={fetchData} className="refresh-btn">Refresh</button>
           </div>
+
+          {visionSubTab === 'scheduled' ? (
+            <div className="cards-container">
+              {sortedVision.map((row, index) => (
+                <div key={index} className="response-card vision-card">
+                  <div className="card-header">
+                    <span className="card-zone">{row.zone}</span>
+                  </div>
+                  <div className="card-unit">{row.unit}</div>
+                  <div className="vision-highlight-box">
+                    <div className="vh-label">Vision Meet</div>
+                    <div className="vh-value">{formatDate(row.visionMeetDate)}</div>
+                    <div className="vh-day">{getDayName(row.visionMeetDate)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            /* Pending Vision Meet List */
+            <div className="missing-container">
+              {Object.entries(visionPendingUnitsByZone)
+                .filter(([zone]) => !zoneFilter || zone === zoneFilter)
+                .map(([zone, units]) => (
+                <div key={zone} className="missing-zone-card vision-pending-card">
+                  <div className="missing-zone-header">
+                    <span className="missing-zone-name">{zone}</span>
+                    <span className="missing-zone-count">{units.length} ശാഖകൾ</span>
+                  </div>
+                  <div className="missing-units-list">
+                    {units.map((unit, idx) => (
+                      <div key={idx} className="missing-unit-item">{unit}</div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
